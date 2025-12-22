@@ -1,16 +1,16 @@
 package com.caesarjlee.caesarfinancialtracker.controllers;
 
-import com.caesarjlee.caesarfinancialtracker.dtos.ProfileDto;
+import com.caesarjlee.caesarfinancialtracker.dtos.AuthRequest;
+import com.caesarjlee.caesarfinancialtracker.dtos.AuthResponse;
+import com.caesarjlee.caesarfinancialtracker.dtos.RegisterRequest;
+import com.caesarjlee.caesarfinancialtracker.dtos.UserResponse;
 import com.caesarjlee.caesarfinancialtracker.services.ProfileService;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -19,16 +19,22 @@ public class ProfileController {
     private final ProfileService profileService;
 
     @PostMapping("/register")
-    public ResponseEntity<ProfileDto> registerProfile(@RequestBody ProfileDto profileDto) {
-        ProfileDto registerProfile = profileService.registerProfile(profileDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(registerProfile);
+    public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
+        UserResponse registeredUser = profileService.registerProfile(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(registeredUser);
     }
 
     @GetMapping("/activate")
-    public ResponseEntity<String> activateProfile(@RequestParam String token) {
+    public ResponseEntity<String> activate(@RequestParam String token) {
         if(profileService.activateProfile(token))
-            return ResponseEntity.ok("Profile activated successfully");
+            return ResponseEntity.ok("Account activated successfully");
         else
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Activation token not found or already used");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Invalid or expired activation token");
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest request) {
+        AuthResponse response = profileService.authenticateAndGenerateToken(request);
+        return ResponseEntity.ok(response);
     }
 }

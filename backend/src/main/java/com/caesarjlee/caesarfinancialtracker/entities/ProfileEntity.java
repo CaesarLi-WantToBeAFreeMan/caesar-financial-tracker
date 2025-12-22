@@ -31,6 +31,6 @@ public class ProfileEntity {
     private String                                               profileImage;
     @Column(updatable = false) @CreationTimestamp LocalDateTime  createdAt;
     @UpdateTimestamp LocalDateTime                               updatedAt;
-    private Boolean                                              isActive = false;
+    private boolean                                              isActive = false;
     private String                                               activationToken;
 }
