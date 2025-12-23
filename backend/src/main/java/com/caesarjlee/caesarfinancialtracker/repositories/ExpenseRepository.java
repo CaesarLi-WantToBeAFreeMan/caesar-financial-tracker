@@ -1,0 +1,31 @@
+package com.caesarjlee.caesarfinancialtracker.repositories;
+
+import com.caesarjlee.caesarfinancialtracker.entities.ExpenseEntity;
+
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+
+public interface ExpenseRepository extends JpaRepository<ExpenseEntity, Long> {
+    // SELECT * FROM cft_expenses WHERE profile_id = ?1 ORDER BY date DESC
+    List<ExpenseEntity> findByProfileIdOrderByDateDesc(Long profileId);
+    // SELECT * FROM cft_expenses WHERE profile_id = ?1 ORDER BY date DESC LIMIT 5
+    List<ExpenseEntity> findTop5ByProfileIdOrderByDateDesc(Long profileId);
+
+    @Query("SELECT SUM(e.price) FROM ExpenseEntity e WHERE e.profile.id = :profileId")
+    BigDecimal          findTotalExpenseByProfileId(@Param("profileId") Long profileId);
+
+    // SELECT * FROM cft_expenses WHERE profile_id = ?1 AND date BETWEEN ?2 AND ?3 AND LOWER(name) LIKE LOWER('%' || ?4
+    // || '%') ORDER BY
+    List<ExpenseEntity> findByProfileIdAndDateBetweenAndNameContainingIgnoreCase(Long profileId, LocalDate startDate,
+                                                                                 LocalDate endDate, String keyword,
+                                                                                 Sort sort);
+
+    // SELECT * FROM cft_expenses WHERE profile_id = ?1 AND date BETWEEN ?2 AND ?3
+    List<ExpenseEntity> findByProfileIdAndDateBetween(Long profileId, LocalDate startDate, LocalDate endDate);
+}
