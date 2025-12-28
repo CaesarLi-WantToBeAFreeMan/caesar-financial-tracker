@@ -8,6 +8,7 @@ import com.caesarjlee.caesarfinancialtracker.entities.ProfileEntity;
 import com.caesarjlee.caesarfinancialtracker.repositories.CategoryRepository;
 import com.caesarjlee.caesarfinancialtracker.repositories.IncomeRepository;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -70,5 +71,15 @@ public class IncomeService {
     public BigDecimal getTotalIncomes() {
         ProfileEntity profile = profileService.getCurrentProfile();
         return incomeRepository.findTotalIncomeByProfileId(profile.getId());
+    }
+
+    public List<IncomeResponse> filterIncome(LocalDate startDate, LocalDate endDate, String keyword, Sort sort) {
+        ProfileEntity profile = profileService.getCurrentProfile();
+        return incomeRepository
+            .findByProfileIdAndDateBetweenAndNameContainingIgnoreCase(profile.getId(), startDate, endDate, keyword,
+                                                                      sort)
+            .stream()
+            .map(this::toResponse)
+            .toList();
     }
 }

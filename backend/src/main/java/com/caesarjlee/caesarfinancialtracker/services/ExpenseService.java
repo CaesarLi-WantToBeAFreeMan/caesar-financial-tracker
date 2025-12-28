@@ -8,6 +8,7 @@ import com.caesarjlee.caesarfinancialtracker.entities.ProfileEntity;
 import com.caesarjlee.caesarfinancialtracker.repositories.CategoryRepository;
 import com.caesarjlee.caesarfinancialtracker.repositories.ExpenseRepository;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -71,5 +72,15 @@ public class ExpenseService {
     public BigDecimal getTotalExpenses() {
         ProfileEntity profile = profileService.getCurrentProfile();
         return expenseRepository.findTotalExpenseByProfileId(profile.getId());
+    }
+
+    public List<ExpenseResponse> filterExpense(LocalDate startDate, LocalDate endDate, String keyword, Sort sort) {
+        ProfileEntity profile = profileService.getCurrentProfile();
+        return expenseRepository
+            .findByProfileIdAndDateBetweenAndNameContainingIgnoreCase(profile.getId(), startDate, endDate, keyword,
+                                                                      sort)
+            .stream()
+            .map(this::toResponse)
+            .toList();
     }
 }
