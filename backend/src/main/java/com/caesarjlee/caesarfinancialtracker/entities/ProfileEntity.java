@@ -25,12 +25,9 @@ public class ProfileEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) Long id;
     private String                                               firstName;
     private String                                               lastName;
-    private Integer                                              age;
     @Column(unique = true) private String                        email;
     private String                                               password;
     private String                                               profileImage;
     @Column(updatable = false) @CreationTimestamp LocalDateTime  createdAt;
     @UpdateTimestamp LocalDateTime                               updatedAt;
-    private boolean                                              isActive = false;
-    private String                                               activationToken;
 }

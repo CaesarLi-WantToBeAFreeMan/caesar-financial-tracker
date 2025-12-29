@@ -1,6 +1,6 @@
 package com.caesarjlee.caesarfinancialtracker.securities;
 
-import com.caesarjlee.caesarfinancialtracker.services.JwtService;
+import com.caesarjlee.caesarfinancialtracker.utilities.JwtService;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;

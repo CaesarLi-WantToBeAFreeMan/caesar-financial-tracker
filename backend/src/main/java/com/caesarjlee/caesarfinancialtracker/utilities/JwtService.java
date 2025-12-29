@@ -1,4 +1,4 @@
-package com.caesarjlee.caesarfinancialtracker.services;
+package com.caesarjlee.caesarfinancialtracker.utilities;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;

@@ -1,13 +1,15 @@
 package com.caesarjlee.caesarfinancialtracker.services;
 
-import com.caesarjlee.caesarfinancialtracker.dtos.AuthRequest;
-import com.caesarjlee.caesarfinancialtracker.dtos.AuthResponse;
+import com.caesarjlee.caesarfinancialtracker.dtos.LoginRequest;
+import com.caesarjlee.caesarfinancialtracker.dtos.LoginResponse;
 import com.caesarjlee.caesarfinancialtracker.dtos.RegisterRequest;
-import com.caesarjlee.caesarfinancialtracker.dtos.UserResponse;
+import com.caesarjlee.caesarfinancialtracker.dtos.RegisterResponse;
 import com.caesarjlee.caesarfinancialtracker.entities.ProfileEntity;
+import com.caesarjlee.caesarfinancialtracker.exceptions.authentication.EmailAlreadyRegisteredException;
+import com.caesarjlee.caesarfinancialtracker.exceptions.authentication.ProfileNotFoundException;
 import com.caesarjlee.caesarfinancialtracker.repositories.ProfileRepository;
+import com.caesarjlee.caesarfinancialtracker.utilities.JwtService;
 
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,53 +24,52 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class ProfileService {
-    private final ProfileRepository     profileRepository;
-    private final PasswordEncoder       passwordEncoder;
-    private final AuthenticationManager authenticationManager;
-    private final JwtService            jwtService;
+    private final ProfileRepository profileRepository;
+    private final PasswordEncoder   passwordEncoder;
+    private final JwtService        jwtService;
 
-    public UserResponse                 registerProfile(RegisterRequest request) {
+    private RegisterResponse        toRegisterResponse(ProfileEntity entity) {
+        return new RegisterResponse(entity.getId(), entity.getFirstName(), entity.getLastName(), entity.getEmail(),
+                                           entity.getProfileImage(), entity.getCreatedAt(), entity.getUpdatedAt());
+    }
+
+    private LoginResponse toLoginResponse(String token, ProfileEntity entity) {
+        return new LoginResponse(token, entity.getId(), entity.getFirstName(), entity.getLastName(), entity.getEmail(),
+                                 entity.getProfileImage(), entity.getCreatedAt(), entity.getUpdatedAt());
+    }
+
+    public RegisterResponse register(RegisterRequest request) {
         if(profileRepository.existsByEmail(request.email()))
-            throw new RuntimeException("Email already registered");
+            throw new EmailAlreadyRegisteredException(request.email());
         ProfileEntity newProfile = ProfileEntity.builder()
                                        .firstName(request.firstName())
                                        .lastName(request.lastName())
-                                       .age(request.age())
                                        .email(request.email())
                                        .password(passwordEncoder.encode(request.password()))
                                        .profileImage(request.profileImage())
-                                       .activationToken(UUID.randomUUID().toString())
-                                       .isActive(true)
                                        .build();
         newProfile = profileRepository.save(newProfile);
-        return toUserResponse(newProfile);
-    }
-
-    private UserResponse toUserResponse(ProfileEntity entity) {
-        return new UserResponse(entity.getId(), entity.getFirstName(), entity.getLastName(), entity.getAge(),
-                                entity.getEmail(), entity.getProfileImage(), entity.getCreatedAt(),
-                                entity.getUpdatedAt());
+        return toRegisterResponse(newProfile);
     }
 
     public ProfileEntity getCurrentProfile() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String         email          = authentication.getName();
-        return profileRepository.findByEmail(email).orElseThrow(
-            () -> new UsernameNotFoundException("Profile not found: " + email));
+        return profileRepository.findByEmail(email).orElseThrow(() -> new ProfileNotFoundException(email));
     }
 
-    public UserResponse getPublicProfile(String email) {
-        ProfileEntity user = email == null ? getCurrentProfile()
-                                           : profileRepository.findByEmail(email).orElseThrow(
-                                                 () -> new UsernameNotFoundException("Profile not found: " + email));
-        return toUserResponse(user);
+    public ProfileEntity getPublicProfile(String email) {
+        ProfileEntity user =
+            email == null ? getCurrentProfile()
+                          : profileRepository.findByEmail(email).orElseThrow(() -> new ProfileNotFoundException(email));
+        return user;
     }
 
-    public AuthResponse authenticateAndGenerateToken(AuthRequest request) {
-        authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(request.email(), request.password()));
-        String       token = jwtService.generateToken(request.email());
-        UserResponse user  = getPublicProfile(request.email());
-        return new AuthResponse(token, user);
+    public LoginResponse login(LoginRequest request) {
+        ProfileEntity profile = profileRepository.findByEmail(request.email())
+                                    .orElseThrow(() -> new ProfileNotFoundException(request.email()));
+        if(!passwordEncoder.matches(request.password(), profile.getPassword()))
+            throw new ProfileNotFoundException(request.email());
+        return toLoginResponse(jwtService.generateToken(profile.getEmail()), profile);
     }
 }

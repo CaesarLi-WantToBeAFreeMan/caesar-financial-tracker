@@ -2,7 +2,7 @@ package com.caesarjlee.caesarfinancialtracker.securities;
 
 import com.caesarjlee.caesarfinancialtracker.securities.JwtAuthenticationFilter;
 import com.caesarjlee.caesarfinancialtracker.services.AppUserDetailsService;
-import com.caesarjlee.caesarfinancialtracker.services.JwtService;
+import com.caesarjlee.caesarfinancialtracker.utilities.JwtService;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
