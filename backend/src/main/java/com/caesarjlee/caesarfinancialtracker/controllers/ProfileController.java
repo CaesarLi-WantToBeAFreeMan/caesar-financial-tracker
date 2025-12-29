@@ -24,14 +24,6 @@ public class ProfileController {
         return ResponseEntity.status(HttpStatus.CREATED).body(registeredUser);
     }
 
-    @GetMapping("/activate")
-    public ResponseEntity<String> activate(@RequestParam String token) {
-        if(profileService.activateProfile(token))
-            return ResponseEntity.ok("Account activated successfully");
-        else
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Invalid or expired activation token");
-    }
-
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest request) {
         AuthResponse response = profileService.authenticateAndGenerateToken(request);

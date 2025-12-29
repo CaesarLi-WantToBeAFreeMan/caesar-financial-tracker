@@ -23,7 +23,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ProfileService {
     private final ProfileRepository     profileRepository;
-    private final EmailService          emailService;   // disable email service for now
     private final PasswordEncoder       passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService            jwtService;
@@ -39,16 +38,9 @@ public class ProfileService {
                                        .password(passwordEncoder.encode(request.password()))
                                        .profileImage(request.profileImage())
                                        .activationToken(UUID.randomUUID().toString())
-                                       .isActive(true)   // activate account by default for now
+                                       .isActive(true)
                                        .build();
         newProfile = profileRepository.save(newProfile);
-        // disable email activation for now
-        /*
-        String activationLink = "http://localhost:1989/api/alpha.1.0/activate?token=" + newProfile.getActivationToken();
-        String subject = "Activate your Caesar Financial Tracker Account";
-        String body = "Click the link to activate your account:\n" + activationLink;
-        emailService.sendEmail(newProfile.getEmail(), subject, body);
-        */
         return toUserResponse(newProfile);
     }
 
@@ -56,21 +48,6 @@ public class ProfileService {
         return new UserResponse(entity.getId(), entity.getFirstName(), entity.getLastName(), entity.getAge(),
                                 entity.getEmail(), entity.getProfileImage(), entity.getCreatedAt(),
                                 entity.getUpdatedAt());
-    }
-
-    public boolean activateProfile(String activationToken) {
-        return profileRepository.findByActivationToken(activationToken)
-            .map(profile -> {
-                profile.setActivationToken(null);
-                profile.setActive(true);
-                profileRepository.save(profile);
-                return true;
-            })
-            .orElse(false);
-    }
-
-    public boolean isAccountActive(String email) {
-        return profileRepository.findByEmail(email).map(ProfileEntity::isActive).orElse(false);
     }
 
     public ProfileEntity getCurrentProfile() {
@@ -81,10 +58,9 @@ public class ProfileService {
     }
 
     public UserResponse getPublicProfile(String email) {
-        ProfileEntity user = email == null
-                               ? getCurrentProfile()
-                               : profileRepository.findByEmail(email).orElseThrow(
-                                     () -> new UsernameNotFoundException("Profile not found with email: " + email));
+        ProfileEntity user = email == null ? getCurrentProfile()
+                                           : profileRepository.findByEmail(email).orElseThrow(
+                                                 () -> new UsernameNotFoundException("Profile not found: " + email));
         return toUserResponse(user);
     }
 
