@@ -5,6 +5,9 @@ import com.caesarjlee.caesarfinancialtracker.dtos.ExpenseResponse;
 import com.caesarjlee.caesarfinancialtracker.entities.CategoryEntity;
 import com.caesarjlee.caesarfinancialtracker.entities.ExpenseEntity;
 import com.caesarjlee.caesarfinancialtracker.entities.ProfileEntity;
+import com.caesarjlee.caesarfinancialtracker.exceptions.categories.CategoryNotFoundException;
+import com.caesarjlee.caesarfinancialtracker.exceptions.expenses.ExpenseNotFoundException;
+import com.caesarjlee.caesarfinancialtracker.exceptions.expenses.ExpenseUnauthorizedException;
 import com.caesarjlee.caesarfinancialtracker.repositories.CategoryRepository;
 import com.caesarjlee.caesarfinancialtracker.repositories.ExpenseRepository;
 
@@ -30,9 +33,10 @@ public class ExpenseService {
     }
 
     public ExpenseResponse addExpense(ExpenseRequest request) {
-        ProfileEntity  profile  = profileService.getCurrentProfile();
-        CategoryEntity category = categoryRepository.findById(request.categoryId())
-                                      .orElseThrow(() -> new RuntimeException("Category not found"));
+        ProfileEntity  profile = profileService.getCurrentProfile();
+        CategoryEntity category =
+            categoryRepository.findByIdAndProfileId(request.categoryId(), profile.getId())
+                .orElseThrow(() -> new CategoryNotFoundException(Long.toString(request.categoryId())));
         ExpenseEntity newExpense = ExpenseEntity.builder()
                                        .name(request.name())
                                        .icon(request.icon())
@@ -56,10 +60,10 @@ public class ExpenseService {
 
     public void deleteExpenseById(Long id) {
         ProfileEntity profile = profileService.getCurrentProfile();
-        ExpenseEntity expense =
-            expenseRepository.findById(id).orElseThrow(() -> new RuntimeException("Expense not found"));
+        ExpenseEntity expense = expenseRepository.findByIdAndProfileId(id, profile.getId())
+                                    .orElseThrow(() -> new ExpenseNotFoundException(Long.toString(id)));
         if(!expense.getProfile().getId().equals(profile.getId()))
-            throw new RuntimeException("Unauthorized to delete this expense");
+            throw new ExpenseUnauthorizedException(Long.toString(id));
         expenseRepository.delete(expense);
     }
 

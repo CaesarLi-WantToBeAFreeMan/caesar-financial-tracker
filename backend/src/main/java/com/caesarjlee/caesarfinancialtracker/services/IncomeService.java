@@ -5,6 +5,9 @@ import com.caesarjlee.caesarfinancialtracker.dtos.IncomeResponse;
 import com.caesarjlee.caesarfinancialtracker.entities.CategoryEntity;
 import com.caesarjlee.caesarfinancialtracker.entities.IncomeEntity;
 import com.caesarjlee.caesarfinancialtracker.entities.ProfileEntity;
+import com.caesarjlee.caesarfinancialtracker.exceptions.categories.CategoryNotFoundException;
+import com.caesarjlee.caesarfinancialtracker.exceptions.incomes.IncomeNotFoundException;
+import com.caesarjlee.caesarfinancialtracker.exceptions.incomes.IncomeUnauthorizedException;
 import com.caesarjlee.caesarfinancialtracker.repositories.CategoryRepository;
 import com.caesarjlee.caesarfinancialtracker.repositories.IncomeRepository;
 
@@ -30,9 +33,10 @@ public class IncomeService {
     }
 
     public IncomeResponse addIncome(IncomeRequest request) {
-        ProfileEntity  profile  = profileService.getCurrentProfile();
-        CategoryEntity category = categoryRepository.findById(request.categoryId())
-                                      .orElseThrow(() -> new RuntimeException("Category not found"));
+        ProfileEntity  profile = profileService.getCurrentProfile();
+        CategoryEntity category =
+            categoryRepository.findByIdAndProfileId(request.categoryId(), profile.getId())
+                .orElseThrow(() -> new CategoryNotFoundException(Long.toString(request.categoryId())));
         IncomeEntity newIncome = IncomeEntity.builder()
                                      .name(request.name())
                                      .icon(request.icon())
@@ -56,9 +60,10 @@ public class IncomeService {
 
     public void deleteIncomeById(Long id) {
         ProfileEntity profile = profileService.getCurrentProfile();
-        IncomeEntity income = incomeRepository.findById(id).orElseThrow(() -> new RuntimeException("Income not found"));
+        IncomeEntity  income  = incomeRepository.findByIdAndProfileId(id, profile.getId())
+                                  .orElseThrow(() -> new IncomeNotFoundException(Long.toString(id)));
         if(!income.getProfile().getId().equals(profile.getId()))
-            throw new RuntimeException("Unauthorized to delete this income");
+            throw new IncomeUnauthorizedException(Long.toString(id));
         incomeRepository.delete(income);
     }
 

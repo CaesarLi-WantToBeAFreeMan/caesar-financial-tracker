@@ -10,12 +10,14 @@ import org.springframework.data.repository.query.Param;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface ExpenseRepository extends JpaRepository<ExpenseEntity, Long> {
+    Optional<ExpenseEntity> findByIdAndProfileId(Long id, Long profileId);
     // SELECT * FROM cft_expenses WHERE profile_id = ?1 ORDER BY date DESC
-    List<ExpenseEntity> findByProfileIdOrderByDateDesc(Long profileId);
+    List<ExpenseEntity>     findByProfileIdOrderByDateDesc(Long profileId);
     // SELECT * FROM cft_expenses WHERE profile_id = ?1 ORDER BY date DESC LIMIT 5
-    List<ExpenseEntity> findTop5ByProfileIdOrderByDateDesc(Long profileId);
+    List<ExpenseEntity>     findTop5ByProfileIdOrderByDateDesc(Long profileId);
 
     @Query("SELECT SUM(e.price) FROM ExpenseEntity e WHERE e.profile.id = :profileId")
     BigDecimal          findTotalExpenseByProfileId(@Param("profileId") Long profileId);
