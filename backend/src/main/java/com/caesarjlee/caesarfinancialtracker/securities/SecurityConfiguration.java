@@ -34,7 +34,7 @@ public class SecurityConfiguration {
         http.cors(Customizer.withDefaults())
             .csrf(csrf -> csrf.disable())   // disable CSRF
             .authorizeHttpRequests(auth
-                                   -> auth.requestMatchers("/register", "/activate", "/login")
+                                   -> auth.requestMatchers("/api/alpha.1.0/register", "/api/alpha.1.0/login")
                                           .permitAll()   // unauthorized endpoints
                                           .anyRequest()
                                           .authenticated()   // other endpoints need authorization
@@ -54,10 +54,10 @@ public class SecurityConfiguration {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
         corsConfiguration.setAllowedOriginPatterns(List.of("http://localhost:5173"));
         corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        corsConfiguration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        corsConfiguration.setAllowedHeaders(List.of("*"));
         corsConfiguration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", corsConfiguration);
+        source.registerCorsConfiguration("/api/**", corsConfiguration);
         return source;
     }
 
