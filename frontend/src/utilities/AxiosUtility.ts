@@ -1,32 +1,24 @@
 import axios from "axios";
+import {BASE_URL} from "./apiEndpoint";
 
-const api = axios.create({
-    baseURL: "https://caesar-financial-tracker-backend.onrender.com/api/alpha.1.0",
-    headers: {"Content-Type": "application/json", Accept: "application/json"}
-});
+const axiosConfig = axios.create({baseURL: BASE_URL, headers: {"Content-Type": "application/json"}});
 
 const unauthorizedEndpoints = ["/register", "/login"];
 
-api.interceptors.request.use(
+axiosConfig.interceptors.request.use(
     config => {
-        const isUnauthorizedEndpoint: boolean = unauthorizedEndpoints.some((endpoint: string) =>
-            config.url?.includes(endpoint)
-        );
+        const isUnauthorizedEndpoint = unauthorizedEndpoints.some(endpoint => config.url?.includes(endpoint));
         if (!isUnauthorizedEndpoint) {
             const accessToken = localStorage.getItem("token");
-            if (accessToken) config.headers.Authorization = `Bearer #{accessToken}`;
+            if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
         }
         return config;
     },
-    error => {
-        return Promise.reject(error);
-    }
+    error => Promise.reject(error)
 );
 
-api.interceptors.response.use(
-    response => {
-        return response;
-    },
+axiosConfig.interceptors.response.use(
+    response => response,
     error => {
         if (error.response) {
             if (error.response.status === 401) window.location.href = "/login";
@@ -35,3 +27,5 @@ api.interceptors.response.use(
         return Promise.reject(error);
     }
 );
+
+export default axiosConfig;

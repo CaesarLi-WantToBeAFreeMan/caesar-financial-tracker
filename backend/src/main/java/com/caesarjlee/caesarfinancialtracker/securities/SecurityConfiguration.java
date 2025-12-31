@@ -27,45 +27,55 @@ import lombok.RequiredArgsConstructor;
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfiguration {
-    private final AppUserDetailsService appUserDetailsService;
-    private final JwtService            jwtService;
+    private final AppUserDetailsService appUserDetailsService;   // load users from database
+    private final JwtService            jwtService;              // JWT utility service
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.disable())   // disable CSRF
-            .authorizeHttpRequests(auth
+        http.cors(cors
+                  -> cors.configurationSource(
+                      corsConfigurationSource()))   // make Spring Security applies CORS before auth filtera
+            .csrf(csrf -> csrf.disable())           // disable CSRF to use JWT token
+            .authorizeHttpRequests(auth             // authorization rules
                                    -> auth.requestMatchers(HttpMethod.OPTIONS, "/**")
-                                          .permitAll()   // allow preflight for everything
+                                          .permitAll()   // allow all preflights (OPTIONS) that were sent by browsers
+                                                         // for CORS automatically
                                           .requestMatchers("/api/alpha.1.0/register", "/api/alpha.1.0/login")
-                                          .permitAll()   // unauthorized endpoints
+                                          .permitAll()   // public (unauthorized) endpoints
                                           .anyRequest()
-                                          .authenticated()   // other endpoints need authorization
+                                          .authenticated()   // everything else needs authentication
                                    )
+            // every request carries JWT rather then HTTP session
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            // add JWT filter before authentication
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
     @Bean
+    // password encoder used when saving/verifying passwords
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
     @Bean
+    // frontend calls this to communicate with backend
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
-        corsConfiguration.setAllowedOrigins(List.of("http://localhost:5173"));   // allow local frontend web for now
-        corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        corsConfiguration.setAllowedHeaders(List.of("Content-Type", "Authorization"));
-        corsConfiguration.setExposedHeaders(List.of("Authorization"));
-        corsConfiguration.setAllowCredentials(true);
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        corsConfiguration.setAllowedOrigins(List.of("http://localhost:5173"));   // allowed frontend origins
+        corsConfiguration.setAllowedMethods(
+            List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));                         // allowed HTTP methods
+        corsConfiguration.setAllowedHeaders(List.of("Content-Type", "Authorization"));   // allowed HTTP headers
+        corsConfiguration.setExposedHeaders(List.of("Authorization"));                   // headers exposed to frontend
+        corsConfiguration.setAllowCredentials(false);                                    // use JWT instead of cookies
+        UrlBasedCorsConfigurationSource source =
+            new UrlBasedCorsConfigurationSource();   // apply CORS configuration to all endpoints
         source.registerCorsConfiguration("/**", corsConfiguration);
         return source;
     }
 
     @Bean
+    // authentication manager used by login endpoint
     public AuthenticationManager authenticationManager() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(appUserDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
