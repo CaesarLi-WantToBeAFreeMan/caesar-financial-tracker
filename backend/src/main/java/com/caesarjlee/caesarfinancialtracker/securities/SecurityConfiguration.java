@@ -6,6 +6,7 @@ import com.caesarjlee.caesarfinancialtracker.utilities.JwtService;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -34,7 +35,9 @@ public class SecurityConfiguration {
         http.cors(Customizer.withDefaults())
             .csrf(csrf -> csrf.disable())   // disable CSRF
             .authorizeHttpRequests(auth
-                                   -> auth.requestMatchers("/api/alpha.1.0/register", "/api/alpha.1.0/login")
+                                   -> auth.requestMatchers(HttpMethod.OPTIONS, "/**")
+                                          .permitAll()   // allow preflight for everything
+                                          .requestMatchers("/api/alpha.1.0/register", "/api/alpha.1.0/login")
                                           .permitAll()   // unauthorized endpoints
                                           .anyRequest()
                                           .authenticated()   // other endpoints need authorization
