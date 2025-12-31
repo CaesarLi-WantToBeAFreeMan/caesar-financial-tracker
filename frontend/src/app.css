@@ -6,12 +6,3 @@ body {
     overflow-x: hidden;
     box-sizing: border-box;
 }
-
-@layer components {
-    .cyber-input {
-        @apply w-full bg-black border border-cyan-400 rounded-xl px-4 py-3
-           text-cyan-200 placeholder-cyan-500
-           focus:outline-none focus:ring-2 focus:ring-cyan-400
-           shadow-[0_0_10px_rgba(34,211,238,0.4)];
-    }
-}
