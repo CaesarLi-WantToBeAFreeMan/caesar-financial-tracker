@@ -10,9 +10,11 @@ import com.caesarjlee.caesarfinancialtracker.exceptions.authentication.ProfileNo
 import com.caesarjlee.caesarfinancialtracker.repositories.ProfileRepository;
 import com.caesarjlee.caesarfinancialtracker.utilities.JwtService;
 
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,13 +26,14 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class ProfileService {
-    private final ProfileRepository profileRepository;
-    private final PasswordEncoder   passwordEncoder;
-    private final JwtService        jwtService;
+    private final ProfileRepository     profileRepository;
+    private final PasswordEncoder       passwordEncoder;
+    private final JwtService            jwtService;
+    private final AuthenticationManager authenticationManager;
 
-    private RegisterResponse        toRegisterResponse(ProfileEntity entity) {
+    private RegisterResponse            toRegisterResponse(ProfileEntity entity) {
         return new RegisterResponse(entity.getId(), entity.getFirstName(), entity.getLastName(), entity.getEmail(),
-                                           entity.getProfileImage(), entity.getCreatedAt(), entity.getUpdatedAt());
+                                               entity.getProfileImage(), entity.getCreatedAt(), entity.getUpdatedAt());
     }
 
     private LoginResponse toLoginResponse(String token, ProfileEntity entity) {
@@ -66,8 +69,8 @@ public class ProfileService {
     }
 
     public LoginResponse login(LoginRequest request) {
-        ProfileEntity profile = profileRepository.findByEmail(request.email())
-                                    .orElseThrow(() -> new ProfileNotFoundException(request.email()));
+        var profile = profileRepository.findByEmail(request.email())
+                          .orElseThrow(() -> new ProfileNotFoundException(request.email()));
         if(!passwordEncoder.matches(request.password(), profile.getPassword()))
             throw new ProfileNotFoundException(request.email());
         return toLoginResponse(jwtService.generateToken(profile.getEmail()), profile);

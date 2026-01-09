@@ -1,12 +1,18 @@
 package com.caesarjlee.caesarfinancialtracker.configurations;
 
+import com.caesarjlee.caesarfinancialtracker.securities.JwtAuthenticationFilter;
+import com.caesarjlee.caesarfinancialtracker.services.AppUserDetailsService;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,43 +22,45 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import lombok.RequiredArgsConstructor;
 
 @Configuration
+@EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfiguration {
-
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final AppUserDetailsService   appUserDetailsService;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
-
         httpSecurity
             .csrf(csrf -> csrf.disable())   // disable CSRF to use JWT
-
-            .authorizeHttpRequests(
-                authentication
-                -> authentication
-                       .requestMatchers(HttpMethod.OPTIONS, "/**")   // allow preflight
-                       .permitAll()
-                       .requestMatchers("/api/alpha.1.0/register", "/api/alpha.1.0/login")   // public endpoints
-                       .permitAll()
-                       .anyRequest()   // everything else requires JWT
-                       .authenticated())
+            .cors(Customizer.withDefaults())
             .sessionManagement(
-                session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))           // no session
+                session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))   // no session
+            .authorizeHttpRequests(authentication
+                                   -> authentication
+                                          .requestMatchers(HttpMethod.POST, "/register", "/login")   // public endpoints
+                                          .permitAll()
+                                          .anyRequest()   // everything else requires JWT
+                                          .authenticated())
+            .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);   // JWT filter
         return httpSecurity.build();
     }
 
     @Bean
-    public AuthenticationManager authenticationManager() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(appUserDetailsService);
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(appUserDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
-        return new ProviderManager(provider);
+        return provider;
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
+        throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
     }
 }
