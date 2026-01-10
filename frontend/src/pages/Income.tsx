@@ -1,7 +1,9 @@
+import Dashboard from "../components/Dashboard";
+
 export default function Income() {
     return (
         <>
-            <h1>Income</h1>
+            <Dashboard activeRoute="Income">Income</Dashboard>
         </>
     );
 }

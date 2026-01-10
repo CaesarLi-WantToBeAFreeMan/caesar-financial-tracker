@@ -1,7 +1,9 @@
+import Dashboard from "../components/Dashboard";
+
 export default function Home() {
     return (
         <>
-            <h1>Home</h1>
+            <Dashboard activeRoute="Dashboard">Home</Dashboard>
         </>
     );
 }

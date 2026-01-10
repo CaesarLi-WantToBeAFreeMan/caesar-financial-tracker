@@ -14,10 +14,13 @@ export interface User {
 export interface UserContextType {
     user: User | null;
     setUser: React.Dispatch<React.SetStateAction<User | null>>;
+    clearUser: () => void;
 }
 
 export const UserContext = createContext<UserContextType | null>(null);
+
 export const UserContextProvider = ({children}: {children: ReactNode}) => {
     const [user, setUser] = useState<User | null>(null);
-    return <UserContext.Provider value={{user, setUser}}>{children}</UserContext.Provider>;
+    const clearUser = () => setUser(null);
+    return <UserContext.Provider value={{user, setUser, clearUser}}>{children}</UserContext.Provider>;
 };

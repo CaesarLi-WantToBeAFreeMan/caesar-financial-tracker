@@ -1,7 +1,9 @@
+import Dashboard from "../components/Dashboard";
+
 export default function Filter() {
     return (
         <>
-            <h1>Filter</h1>
+            <Dashboard activeRoute="Filters">Filter</Dashboard>
         </>
     );
 }
