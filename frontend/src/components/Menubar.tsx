@@ -18,10 +18,10 @@ export default function Menubar({activeRoute}: PropsType) {
     const navigate = useNavigate();
 
     if (!context) return null;
-    const {user, clearUser} = context;
+    const {user, clearUser, loading} = context;
     useEffect(() => {
-        if (!user) navigate("/login");
-    }, [context, navigate]);
+        if (!loading && !user) navigate("/login");
+    }, [user, loading, navigate]);
 
     const handleLogout = () => {
         setIsShowDropdown(false);

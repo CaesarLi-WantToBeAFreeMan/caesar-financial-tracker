@@ -4,18 +4,14 @@ import {BASE_URL} from "./apiEndpoint";
 const axiosConfig = axios.create({
     baseURL: BASE_URL,
     headers: {"Content-Type": "application/json"},
+    withCredentials: false,
     timeout: 32_000 //32 seconds
 });
 
-const unauthorizedEndpoints = ["/register", "/login"];
-
 axiosConfig.interceptors.request.use(
     config => {
-        const isUnauthorizedEndpoint = unauthorizedEndpoints.some(endpoint => config.url?.includes(endpoint));
-        if (!isUnauthorizedEndpoint) {
-            const accessToken = localStorage.getItem("token");
-            if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
-        }
+        const token = localStorage.getItem("token");
+        if (token) config.headers.Authorization = `Bearer ${token}`;
         return config;
     },
     error => Promise.reject(error)

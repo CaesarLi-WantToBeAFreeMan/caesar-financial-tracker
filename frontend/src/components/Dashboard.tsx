@@ -1,8 +1,10 @@
-import type {ReactNode} from "react";
+import {type ReactNode} from "react";
 import Menubar from "./Menubar";
 import Sidebar from "./Sidebar";
+import {useUser} from "../hooks/useUser";
 
 export default function Dashboard({children, activeRoute}: {children: ReactNode; activeRoute: string}) {
+    useUser();
     return (
         <>
             <Menubar activeRoute={activeRoute} />

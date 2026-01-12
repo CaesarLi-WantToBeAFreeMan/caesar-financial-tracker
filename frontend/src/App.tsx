@@ -12,6 +12,10 @@ import {UserContextProvider} from "./context/UserContext";
 import Settings from "./pages/Settings";
 
 export default function App() {
+    const Root = () => {
+        const isAuthenticated = !!localStorage.getItem("token");
+        return isAuthenticated ? <Navigate to="/dashboard" /> : <Navigate to="/login" />;
+    };
     return (
         <>
             <Toaster />
@@ -19,7 +23,7 @@ export default function App() {
                 <BrowserRouter>
                     <Routes>
                         {/*redirect to login*/}
-                        <Route path="/" element={<Navigate to="/login" replace />} />
+                        <Route path="/" element={<Root />} />
                         <Route path="/dashboard" element={<Home />} />
                         <Route path="/category" element={<Category />} />
                         <Route path="/filter" element={<Filter />} />
@@ -28,7 +32,6 @@ export default function App() {
                         <Route path="/login" element={<Login />} />
                         <Route path="/signup" element={<Signup />} />
                         <Route path="/settings" element={<Settings />} />
-                        {/*catch-all for unknown routes*/}
                         <Route path="*" element={<Navigate to="/login" replace />} />
                     </Routes>
                 </BrowserRouter>
