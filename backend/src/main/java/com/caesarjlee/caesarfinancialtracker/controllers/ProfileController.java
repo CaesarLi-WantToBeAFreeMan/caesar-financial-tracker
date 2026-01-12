@@ -20,13 +20,16 @@ public class ProfileController {
 
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
-        RegisterResponse registeredUser = profileService.register(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(registeredUser);
+        return ResponseEntity.status(HttpStatus.CREATED).body(profileService.register(request));
     }
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        LoginResponse response = profileService.login(request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(profileService.login(request));
+    }
+
+    @GetMapping("/profile")
+    public ResponseEntity<RegisterResponse> getPublicProfile() {
+        return ResponseEntity.ok(profileService.getPublicProfileInfo());
     }
 }

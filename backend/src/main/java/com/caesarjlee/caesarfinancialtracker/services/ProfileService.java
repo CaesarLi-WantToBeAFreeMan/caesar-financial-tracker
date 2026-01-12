@@ -7,6 +7,7 @@ import com.caesarjlee.caesarfinancialtracker.dtos.RegisterResponse;
 import com.caesarjlee.caesarfinancialtracker.entities.ProfileEntity;
 import com.caesarjlee.caesarfinancialtracker.exceptions.authentication.EmailAlreadyRegisteredException;
 import com.caesarjlee.caesarfinancialtracker.exceptions.authentication.ProfileNotFoundException;
+import com.caesarjlee.caesarfinancialtracker.exceptions.authentication.UnauthenticatedException;
 import com.caesarjlee.caesarfinancialtracker.repositories.ProfileRepository;
 import com.caesarjlee.caesarfinancialtracker.utilities.JwtService;
 
@@ -57,15 +58,14 @@ public class ProfileService {
 
     public ProfileEntity getCurrentProfile() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String         email          = authentication.getName();
+        if(authentication == null || authentication.getName() == null)
+            throw new UnauthenticatedException();
+        String email = authentication.getName();
         return profileRepository.findByEmail(email).orElseThrow(() -> new ProfileNotFoundException(email));
     }
 
-    public ProfileEntity getPublicProfile(String email) {
-        ProfileEntity user =
-            email == null ? getCurrentProfile()
-                          : profileRepository.findByEmail(email).orElseThrow(() -> new ProfileNotFoundException(email));
-        return user;
+    public RegisterResponse getPublicProfileInfo() {
+        return toRegisterResponse(getCurrentProfile());
     }
 
     public LoginResponse login(LoginRequest request) {
