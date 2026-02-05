@@ -5,9 +5,11 @@ import com.caesarjlee.caesarfinancialtracker.dtos.CategoryResponse;
 import com.caesarjlee.caesarfinancialtracker.entities.CategoryEntity;
 import com.caesarjlee.caesarfinancialtracker.entities.ProfileEntity;
 import com.caesarjlee.caesarfinancialtracker.exceptions.categories.CategoryAlreadyExistException;
+import com.caesarjlee.caesarfinancialtracker.exceptions.categories.CategoryInUseException;
 import com.caesarjlee.caesarfinancialtracker.exceptions.categories.CategoryNotFoundException;
 import com.caesarjlee.caesarfinancialtracker.repositories.CategoryRepository;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -62,5 +64,17 @@ public class CategoryService {
         entity.setIcon(request.icon());
         entity = categoryRepository.save(entity);
         return toResponse(entity);
+    }
+
+    public void deleteCategory(Long id) {
+        ProfileEntity  profile  = profileService.getCurrentProfile();
+        CategoryEntity category = categoryRepository.findByIdAndProfileId(id, profile.getId())
+                                      .orElseThrow(() -> new CategoryNotFoundException("id = " + id));
+
+        try {
+            categoryRepository.delete(category);
+        } catch(DataIntegrityViolationException e) {
+            throw new CategoryInUseException(id);
+        }
     }
 }

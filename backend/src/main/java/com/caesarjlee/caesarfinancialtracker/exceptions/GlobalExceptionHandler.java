@@ -44,6 +44,12 @@ public class GlobalExceptionHandler {
             .body(error(HttpStatus.NOT_FOUND, categoryNotFoundException.getMessage()));
     }
 
+    @ExceptionHandler(CategoryInUseException.class)
+    public ResponseEntity<?> handleCategoryInUse(CategoryInUseException categoryInUseException) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(error(HttpStatus.CONFLICT, categoryInUseException.getMessage()));
+    }
+
     @ExceptionHandler(IncomeNotFoundException.class)
     public ResponseEntity<?> handleNotFound(IncomeNotFoundException incomeNotFoundException) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
