@@ -1,4 +1,4 @@
-import EmojiPicker from "emoji-picker-react";
+import EmojiPicker, {Theme} from "emoji-picker-react";
 import {CircleX, Image} from "lucide-react";
 import {useState} from "react";
 
@@ -32,6 +32,7 @@ export default function EmojiPickerPopup({icon, onSelect}: Props) {
                     </button>
 
                     <EmojiPicker
+                        theme={Theme.DARK}
                         onEmojiClick={emoji => {
                             onSelect(emoji.imageUrl || "");
                             setIsOpen(false);
