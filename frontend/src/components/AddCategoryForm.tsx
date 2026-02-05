@@ -16,9 +16,7 @@ export default function AddCategoryForm({onAddCategory}: Props) {
         updatedAt: null
     });
 
-    const handleSubmit = () => {
-        onAddCategory(category);
-    };
+    const handleSubmit = () => onAddCategory(category);
 
     return (
         <div className="space-y-4">
@@ -48,7 +46,7 @@ export default function AddCategoryForm({onAddCategory}: Props) {
             <div className="flex justify-end">
                 <button
                     onClick={handleSubmit}
-                    className="rounded-lg bg-cyan-500/20 px-4 py-2 text-cyan-300 hover:shadow-[0_0_15px_rgba(34,211,238,0.6)]"
+                    className="rounded-lg bg-cyan-500/20 px-4 py-2 text-cyan-300 hover:shadow-[0_0_15px_rgba(34,211,238,0.6)] hover:cursor-pointer"
                 >
                     Add
                 </button>

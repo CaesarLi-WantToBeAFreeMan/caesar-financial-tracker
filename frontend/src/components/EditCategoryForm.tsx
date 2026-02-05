@@ -41,7 +41,7 @@ export default function EditCategoryForm({category, onUpdateCategory}: Props) {
             <div className="flex justify-end pt-4">
                 <button
                     onClick={handleSubmit}
-                    className="rounded-lg px-4 py-2 bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 hover:shadow-[0_0_15px_rgba(34,211,238,0.6)]"
+                    className="rounded-lg px-4 py-2 bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 hover:shadow-[0_0_15px_rgba(34,211,238,0.6)] hover:cursor-pointer"
                 >
                     Update
                 </button>

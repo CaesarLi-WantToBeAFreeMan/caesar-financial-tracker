@@ -52,14 +52,14 @@ export default function CategoryList({categories, totalElements, onEditCategory,
                             <div className="flex items-center gap-2 opacity-0 translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0">
                                 <button
                                     onClick={() => onEditCategory(category.id)}
-                                    className="rounded-md p-2 text-yellow-400 hover:bg-yellow-400/10 hover:shadow-[0_0_12px_rgba(250,204,21,0.6)]"
+                                    className="rounded-md p-2 text-yellow-400 hover:bg-yellow-400/10 hover:shadow-[0_0_12px_rgba(250,204,21,0.6)] hover:cursor-pointer"
                                 >
                                     <Pen size={18} />
                                 </button>
 
                                 <button
                                     onClick={() => onDeleteCategory(category.id)}
-                                    className="rounded-md p-2 text-red-400 hover:bg-red-400/10 hover:shadow-[0_0_12px_rgba(248,113,113,0.6)]"
+                                    className="rounded-md p-2 text-red-400 hover:bg-red-400/10 hover:shadow-[0_0_12px_rgba(248,113,113,0.6)] hover:cursor-pointer"
                                 >
                                     <Trash size={18} />
                                 </button>

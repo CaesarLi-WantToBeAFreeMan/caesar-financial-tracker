@@ -112,7 +112,7 @@ export default function Category() {
 
                     <button
                         onClick={() => setOpenAddCategoryModal(true)}
-                        className="flex items-center gap-2 rounded-lg px-4 py-2 bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 hover:shadow-[0_0_15px_rgba(34,211,238,0.6)]"
+                        className="flex items-center gap-2 rounded-lg px-4 py-2 bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 hover:shadow-[0_0_15px_rgba(34,211,238,0.6)] hover:cursor-pointer"
                     >
                         <Plus size={18} />
                         Add Category

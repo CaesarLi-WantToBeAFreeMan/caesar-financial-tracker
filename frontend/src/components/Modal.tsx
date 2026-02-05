@@ -17,7 +17,7 @@ export default function Modal({isOpen, onClose, children, title}: Props) {
                     <div className="flex items-center justify-between border-b border-cyan-400/20 p-5">
                         <h2 className="text-lg font-semibold text-cyan-300">{title}</h2>
 
-                        <button onClick={onClose} className="rounded-md p-2 hover:bg-red-400/10">
+                        <button onClick={onClose} className="rounded-md p-2 hover:bg-red-400/10 hover:cursor-pointer">
                             <CircleX size={20} className="text-[#e06c75]" />
                         </button>
                     </div>
