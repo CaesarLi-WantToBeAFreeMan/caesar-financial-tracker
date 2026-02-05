@@ -4,6 +4,7 @@ import com.caesarjlee.caesarfinancialtracker.exceptions.authentication.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.categories.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.expenses.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.incomes.*;
+import com.caesarjlee.caesarfinancialtracker.exceptions.pages.*;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -44,6 +45,18 @@ public class GlobalExceptionHandler {
             .body(error(HttpStatus.NOT_FOUND, categoryNotFoundException.getMessage()));
     }
 
+    @ExceptionHandler(CategoryTypeNotFoundException.class)
+    public ResponseEntity<?> handleNotFound(CategoryTypeNotFoundException categoryTypeNotFoundException) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(error(HttpStatus.NOT_FOUND, categoryTypeNotFoundException.getMessage()));
+    }
+
+    @ExceptionHandler(CategoryOrderNotFoundException.class)
+    public ResponseEntity<?> handleNotFound(CategoryOrderNotFoundException categoryOrderNotFoundException) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(error(HttpStatus.NOT_FOUND, categoryOrderNotFoundException.getMessage()));
+    }
+
     @ExceptionHandler(CategoryInUseException.class)
     public ResponseEntity<?> handleCategoryInUse(CategoryInUseException categoryInUseException) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -72,5 +85,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<?> handleUnauthorized(ExpenseUnauthorizedException expenseUnauthorizedException) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
             .body(error(HttpStatus.UNAUTHORIZED, expenseUnauthorizedException.getMessage()));
+    }
+
+    @ExceptionHandler(PageSizeException.class)
+    public ResponseEntity<?> handleUnauthorized(PageSizeException pageSizeException) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(error(HttpStatus.BAD_REQUEST, pageSizeException.getMessage()));
     }
 }

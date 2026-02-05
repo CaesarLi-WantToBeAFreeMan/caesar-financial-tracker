@@ -1,14 +1,14 @@
 import {useEffect, useState} from "react";
-import type {CategoryType} from "../types/CategoryType";
+import type {CategoryData} from "../types/CategoryData";
 import EmojiPickerPopup from "./EmojiPickerPopup";
 
 interface Props {
-    category: CategoryType;
-    onUpdateCategory: (category: CategoryType) => void;
+    category: CategoryData;
+    onUpdateCategory: (category: CategoryData) => void;
 }
 
 export default function EditCategoryForm({category, onUpdateCategory}: Props) {
-    const [form, setForm] = useState<CategoryType>(category);
+    const [form, setForm] = useState<CategoryData>(category);
     useEffect(() => setForm(category), [category]);
 
     const handleSubmit = () => onUpdateCategory(form);

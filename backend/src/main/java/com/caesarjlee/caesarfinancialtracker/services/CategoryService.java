@@ -4,12 +4,20 @@ import com.caesarjlee.caesarfinancialtracker.dtos.CategoryRequest;
 import com.caesarjlee.caesarfinancialtracker.dtos.CategoryResponse;
 import com.caesarjlee.caesarfinancialtracker.entities.CategoryEntity;
 import com.caesarjlee.caesarfinancialtracker.entities.ProfileEntity;
+import com.caesarjlee.caesarfinancialtracker.enumerations.CategoryOrders;
+import com.caesarjlee.caesarfinancialtracker.enumerations.CategoryType;
 import com.caesarjlee.caesarfinancialtracker.exceptions.categories.CategoryAlreadyExistException;
 import com.caesarjlee.caesarfinancialtracker.exceptions.categories.CategoryInUseException;
 import com.caesarjlee.caesarfinancialtracker.exceptions.categories.CategoryNotFoundException;
+import com.caesarjlee.caesarfinancialtracker.exceptions.categories.CategoryTypeNotFoundException;
+import com.caesarjlee.caesarfinancialtracker.exceptions.pages.PageSizeException;
 import com.caesarjlee.caesarfinancialtracker.repositories.CategoryRepository;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -42,17 +50,22 @@ public class CategoryService {
         return toResponse(entity);
     }
 
-    public List<CategoryResponse> getAllCategories() {
+    public Page<CategoryResponse> getCategoriesByTypeAndOrder(String type, CategoryOrders order, int page, int size) {
+        if(size < 1 || size > 120)
+            throw new PageSizeException("page size must be [1, 120]");
         ProfileEntity profile = profileService.getCurrentProfile();
-        return categoryRepository.findByProfileId(profile.getId()).stream().map(this::toResponse).toList();
-    }
-
-    public List<CategoryResponse> getCategoriesByType(String type) {
-        ProfileEntity profile = profileService.getCurrentProfile();
-        return categoryRepository.findAllByTypeAndProfileId(type, profile.getId())
-            .stream()
-            .map(this::toResponse)
-            .toList();
+        CategoryType  validType;
+        try {
+            validType = CategoryType.from(type);
+        } catch(Exception e) {
+            throw new CategoryTypeNotFoundException(type);
+        }
+        Pageable             pageable = PageRequest.of(page, size, order.getSort());
+        Page<CategoryEntity> categories =
+            validType == CategoryType.ALL
+                ? categoryRepository.findByProfileId(profile.getId(), pageable)
+                : categoryRepository.findByTypeAndProfileId(validType.name(), profile.getId(), pageable);
+        return categories.map(this::toResponse);
     }
 
     public CategoryResponse updateCategory(Long id, CategoryRequest request) {

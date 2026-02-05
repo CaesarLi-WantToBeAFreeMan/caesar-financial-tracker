@@ -1,0 +1,7 @@
+export type CategoryOrder =
+    | "NAME_ASCENDING"
+    | "NAME_DESCENDING"
+    | "CREATED_ASCENDING"
+    | "CREATED_DESCENDING"
+    | "UPDATED_ASCENDING"
+    | "UPDATED_DESCENDING";

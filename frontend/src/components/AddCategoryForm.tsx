@@ -1,13 +1,13 @@
 import {useState} from "react";
-import type {CategoryType} from "../types/CategoryType";
+import type {CategoryData} from "../types/CategoryData";
 import EmojiPickerPopup from "./EmojiPickerPopup";
 
 interface Props {
-    onAddCategory: (category: CategoryType) => void;
+    onAddCategory: (category: CategoryData) => void;
 }
 
 export default function AddCategoryForm({onAddCategory}: Props) {
-    const [category, setCategory] = useState<CategoryType>({
+    const [category, setCategory] = useState<CategoryData>({
         id: null,
         name: "",
         icon: "",

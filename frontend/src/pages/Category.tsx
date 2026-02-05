@@ -1,33 +1,47 @@
-import {Plus} from "lucide-react";
+import {LoaderCircle, Plus} from "lucide-react";
 import Dashboard from "../components/Dashboard";
 import {useUser} from "../hooks/useUser";
 import CategoryList from "../components/CategoryList";
+import Pagination from "../components/Pagination";
 import {useEffect, useState} from "react";
 import axiosConfig from "../utilities/AxiosUtility";
 import {API_ENDPOINTS} from "../utilities/apiEndpoint";
 import toast from "react-hot-toast";
 import Modal from "../components/Modal";
 import AddCategoryForm from "../components/AddCategoryForm";
-import type {CategoryType} from "../types/CategoryType";
+import type {CategoryData} from "../types/CategoryData";
 import EditCategoryForm from "../components/EditCategoryForm";
 import DeleteCategoryConfirm from "../components/DeleteCategoryConfirm";
+import {useCategory} from "../hooks/useCategory";
+import CategoryFilterBar from "../components/CategoryFilterBar";
+import type {CategoryPage} from "../types/CategoryPage";
 
 export default function Category() {
     useUser();
 
     const [loading, setLoading] = useState(false);
-    const [categoryData, setCategoryData] = useState<CategoryType[]>([]);
+    const categories = useCategory();
+    const [page, setPage] = useState<CategoryPage | null>(null);
     const [openAddCategoryModal, setOpenAddCategoryModal] = useState(false);
     const [openEditCategoryModal, setOpenEditCategoryModal] = useState(false);
     const [openDeleteCategoryModal, setOpenDeleteCategoryModal] = useState(false);
-    const [selectedCategory, setSelectedCategory] = useState<CategoryType | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState<CategoryData | null>(null);
 
     const fetchCategories = async () => {
-        if (loading) return;
         setLoading(true);
         try {
-            const response = await axiosConfig.get(API_ENDPOINTS.GET_CATEGORIES);
-            if (response.status === 200) setCategoryData(response.data);
+            const response = await axiosConfig.get(API_ENDPOINTS.GET_CATEGORIES, {
+                params: {type: categories.type, order: categories.order, page: categories.page, size: categories.size}
+            });
+            setPage({
+                content: response.data.content,
+                totalElements: response.data.total_elements,
+                totalPages: response.data.total_pages,
+                number: response.data.number,
+                size: response.data.size,
+                first: response.data.first,
+                last: response.data.last
+            });
         } catch (error: any) {
             toast.error(error?.response?.data?.message || "Fetch categories failed");
         } finally {
@@ -35,33 +49,33 @@ export default function Category() {
         }
     };
 
-    const addCategory = async (category: CategoryType) => {
+    const addCategory = async (category: CategoryData) => {
         setOpenAddCategoryModal(false);
         try {
-            const response = await axiosConfig.post(API_ENDPOINTS.ADD_CATEGORY, {
+            await axiosConfig.post(API_ENDPOINTS.ADD_CATEGORY, {
                 name: category.name,
                 type: category.type,
                 icon: category.icon
             });
-            toast.success(response?.data?.message || "Created successfully");
+            toast.success("Created successfully");
             fetchCategories();
         } catch (error: any) {
             toast.error(error?.response?.data?.message || "Created failed");
         }
     };
 
-    const changeCategory = async (category: CategoryType) => {
+    const changeCategory = async (category: CategoryData) => {
         if (!category.id) {
             toast.error("Invalid category ID");
             return;
         }
         try {
-            const response = await axiosConfig.put(API_ENDPOINTS.UPDATE_CATEGORY.replace("{id}", String(category.id)), {
+            await axiosConfig.put(API_ENDPOINTS.UPDATE_CATEGORY.replace("{id}", String(category.id)), {
                 name: category.name,
                 type: category.type,
                 icon: category.icon
             });
-            toast.success(response?.data?.message || "Updated successfully");
+            toast.success("Updated successfully");
             fetchCategories();
         } catch (error: any) {
             toast.error(error?.response?.data?.message || "Updated failed");
@@ -76,8 +90,8 @@ export default function Category() {
             return;
         }
         try {
-            const response = await axiosConfig.delete(API_ENDPOINTS.DELETE_CATEGORY.replace("{id}", String(id)));
-            toast.success(response?.data?.message || "Deleted successfully");
+            await axiosConfig.delete(API_ENDPOINTS.DELETE_CATEGORY.replace("{id}", String(id)));
+            toast.success("Deleted successfully");
             fetchCategories();
         } catch (error: any) {
             toast.error(error?.response?.data?.message || "Deleted failed");
@@ -88,7 +102,7 @@ export default function Category() {
 
     useEffect(() => {
         fetchCategories();
-    }, []);
+    }, [categories.type, categories.order, categories.page, categories.size]);
 
     return (
         <Dashboard activeRoute="Category">
@@ -105,21 +119,51 @@ export default function Category() {
                     </button>
                 </div>
 
-                <CategoryList
-                    categories={categoryData}
-                    onEditCategory={(id: number) => {
-                        const category = categoryData.find(c => c.id === id);
-                        if (!category) return;
-                        setSelectedCategory(category);
-                        setOpenEditCategoryModal(true);
+                <CategoryFilterBar
+                    type={categories.type}
+                    order={categories.order}
+                    size={categories.size}
+                    onTypeChange={t => {
+                        categories.setType(t);
+                        categories.setPage(0);
                     }}
-                    onDeleteCategory={(id: number) => {
-                        const category = categoryData.find(c => c.id === id);
-                        if (!category) return;
-                        setSelectedCategory(category);
-                        setOpenDeleteCategoryModal(true);
+                    onOrderChange={o => {
+                        categories.setOrder(o);
+                        categories.setPage(0);
+                    }}
+                    onSizeChange={s => {
+                        categories.setSize(s);
+                        categories.setPage(0);
                     }}
                 />
+
+                {loading ? (
+                    <div className="flex items-center justify-center py-20">
+                        <LoaderCircle size={39} className="animate-spin text-cyan-400" />
+                    </div>
+                ) : (
+                    page && (
+                        <>
+                            <CategoryList
+                                categories={page.content}
+                                totalElements={page.totalElements}
+                                onEditCategory={(id: number) => {
+                                    const category = page?.content.find((c: CategoryData) => c.id === id);
+                                    if (!category) return;
+                                    setSelectedCategory(category);
+                                    setOpenEditCategoryModal(true);
+                                }}
+                                onDeleteCategory={(id: number) => {
+                                    const category = page?.content.find((c: CategoryData) => c.id === id);
+                                    if (!category) return;
+                                    setSelectedCategory(category);
+                                    setOpenDeleteCategoryModal(true);
+                                }}
+                            />
+                            <Pagination page={page.number} totalPages={page.totalPages} onChange={categories.setPage} />
+                        </>
+                    )
+                )}
 
                 <Modal
                     isOpen={openAddCategoryModal}

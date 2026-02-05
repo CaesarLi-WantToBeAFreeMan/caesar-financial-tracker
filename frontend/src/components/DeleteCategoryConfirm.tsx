@@ -1,8 +1,8 @@
 import {Trash} from "lucide-react";
-import type {CategoryType} from "../types/CategoryType";
+import type {CategoryData} from "../types/CategoryData";
 
 interface Props {
-    category: CategoryType;
+    category: CategoryData;
     onConfirm: (id: number) => void;
     onCancel: () => void;
 }

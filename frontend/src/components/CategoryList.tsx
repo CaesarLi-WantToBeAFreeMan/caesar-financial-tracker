@@ -1,17 +1,22 @@
 import {Box, Pen, Trash} from "lucide-react";
-import type {CategoryType} from "../types/CategoryType";
+import type {CategoryData} from "../types/CategoryData";
 
 interface Props {
-    categories: CategoryType[];
+    categories: CategoryData[];
+    totalElements: number;
     onEditCategory: (id: number) => void;
     onDeleteCategory: (id: number) => void;
 }
 
-export default function CategoryList({categories, onEditCategory, onDeleteCategory}: Props) {
+export default function CategoryList({categories, totalElements, onEditCategory, onDeleteCategory}: Props) {
     return (
         <div className="rounded-xl bg-[#0b0f1a] border border-cyan-500/20 p-6 shadow-[0_0_40px_rgba(34,211,238,0.08)]">
             <div className="mb-5 flex items-center justify-between">
                 <h2 className="text-lg font-semibold tracking-wide text-cyan-300">Category Sources</h2>
+                <span className="text-sm text-cyan-400/80">
+                    Total:
+                    <span className="text-cyan-300 font-semibold">{totalElements}</span>
+                </span>
             </div>
 
             {categories.length === 0 ? (
