@@ -3,6 +3,7 @@ package com.caesarjlee.caesarfinancialtracker.exceptions;
 import com.caesarjlee.caesarfinancialtracker.exceptions.authentication.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.categories.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.expenses.*;
+import com.caesarjlee.caesarfinancialtracker.exceptions.files.filetypes.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.incomes.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.pages.*;
 
@@ -58,9 +59,21 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(CategoryInUseException.class)
-    public ResponseEntity<?> handleCategoryInUse(CategoryInUseException categoryInUseException) {
+    public ResponseEntity<?> handleConflict(CategoryInUseException categoryInUseException) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
             .body(error(HttpStatus.CONFLICT, categoryInUseException.getMessage()));
+    }
+
+    @ExceptionHandler(CategoryNameEmptyException.class)
+    public ResponseEntity<?> handleBadRequest(CategoryNameEmptyException categoryNameEmptyException) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(error(HttpStatus.BAD_REQUEST, categoryNameEmptyException.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidFiletypeException.class)
+    public ResponseEntity<?> handleBadRequest(InvalidFiletypeException invalidFileTypeException) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(error(HttpStatus.BAD_REQUEST, invalidFileTypeException.getMessage()));
     }
 
     @ExceptionHandler(IncomeNotFoundException.class)
@@ -88,7 +101,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(PageSizeException.class)
-    public ResponseEntity<?> handleUnauthorized(PageSizeException pageSizeException) {
+    public ResponseEntity<?> handleBadRequest(PageSizeException pageSizeException) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .body(error(HttpStatus.BAD_REQUEST, pageSizeException.getMessage()));
     }

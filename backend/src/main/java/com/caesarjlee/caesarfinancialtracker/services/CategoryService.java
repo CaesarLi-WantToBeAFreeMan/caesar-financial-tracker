@@ -12,6 +12,7 @@ import com.caesarjlee.caesarfinancialtracker.exceptions.categories.CategoryNotFo
 import com.caesarjlee.caesarfinancialtracker.exceptions.categories.CategoryTypeNotFoundException;
 import com.caesarjlee.caesarfinancialtracker.exceptions.pages.PageSizeException;
 import com.caesarjlee.caesarfinancialtracker.repositories.CategoryRepository;
+import com.caesarjlee.caesarfinancialtracker.utilities.ImportFiles;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -20,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -30,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 public class CategoryService {
     private final CategoryRepository categoryRepository;
     private final ProfileService     profileService;
+    private final ImportFiles        importFiles;
 
     private CategoryResponse         toResponse(CategoryEntity entity) {
         return new CategoryResponse(entity.getId(), entity.getName(), entity.getType(), entity.getIcon(),
@@ -89,5 +92,9 @@ public class CategoryService {
         } catch(DataIntegrityViolationException e) {
             throw new CategoryInUseException(id);
         }
+    }
+
+    public String importCategories(MultipartFile file) throws Exception {
+        return importFiles.importData(file, new CategoryEntity());
     }
 }
