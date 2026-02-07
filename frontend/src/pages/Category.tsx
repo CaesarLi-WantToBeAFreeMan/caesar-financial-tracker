@@ -15,6 +15,7 @@ import DeleteCategoryConfirm from "../components/DeleteCategoryConfirm";
 import {useCategory} from "../hooks/useCategory";
 import CategoryFilterBar from "../components/CategoryFilterBar";
 import type {CategoryPage} from "../types/CategoryPage";
+import CategoryImportModal from "../components/CategoryImportModal";
 
 export default function Category() {
     useUser();
@@ -22,6 +23,7 @@ export default function Category() {
     const [loading, setLoading] = useState(false);
     const categories = useCategory();
     const [page, setPage] = useState<CategoryPage | null>(null);
+    const [openImportModal, setOpenImportModal] = useState(false);
     const [openAddCategoryModal, setOpenAddCategoryModal] = useState(false);
     const [openEditCategoryModal, setOpenEditCategoryModal] = useState(false);
     const [openDeleteCategoryModal, setOpenDeleteCategoryModal] = useState(false);
@@ -100,6 +102,10 @@ export default function Category() {
         }
     };
 
+    const handleExport = () => {
+        console.log("export");
+    };
+
     useEffect(() => {
         fetchCategories();
     }, [categories.type, categories.order, categories.page, categories.size]);
@@ -110,13 +116,27 @@ export default function Category() {
                 <div className="mb-6 flex items-center justify-between">
                     <h2 className="text-2xl font-semibold tracking-wide text-cyan-300">All Categories</h2>
 
-                    <button
-                        onClick={() => setOpenAddCategoryModal(true)}
-                        className="flex items-center gap-2 rounded-lg px-4 py-2 bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 hover:shadow-[0_0_15px_rgba(34,211,238,0.6)] hover:cursor-pointer"
-                    >
-                        <Plus size={18} />
-                        Add Category
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setOpenImportModal(true)}
+                            className="rounded-lg p-3 border border-purple-400 text-purple-300 bg-purple-500 hover:shadow-[0_0_15px_rgba(168,85,247,0.6)] hover:cursor-pointer"
+                        >
+                            Import
+                        </button>
+                        <button
+                            onClick={() => handleExport()}
+                            className="rounded-lg p-3 border border-emerald-400 text-emerald-300 bg-emerald-500 hover:shadow-[0_0_15px_rgba(16,185,129,0.6)] hover:cursor-pointer"
+                        >
+                            Export
+                        </button>
+                        <button
+                            onClick={() => setOpenAddCategoryModal(true)}
+                            className="flex items-center gap-2 rounded-lg px-4 py-2 bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 hover:shadow-[0_0_15px_rgba(34,211,238,0.6)] hover:cursor-pointer"
+                        >
+                            <Plus size={18} />
+                            Add Category
+                        </button>
+                    </div>
                 </div>
 
                 <CategoryFilterBar
@@ -171,6 +191,15 @@ export default function Category() {
                     title="Add Category"
                 >
                     <AddCategoryForm onAddCategory={addCategory} />
+                </Modal>
+
+                <Modal isOpen={openImportModal} onClose={() => setOpenImportModal(false)} title="Import Categories">
+                    <CategoryImportModal
+                        onClose={() => {
+                            setOpenImportModal(false);
+                            fetchCategories();
+                        }}
+                    />
                 </Modal>
 
                 {selectedCategory && (

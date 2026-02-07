@@ -7,5 +7,6 @@ export const API_ENDPOINTS = {
     GET_CATEGORIES: "/categories/filter",
     ADD_CATEGORY: "/categories",
     UPDATE_CATEGORY: "/categories/{id}",
-    DELETE_CATEGORY: "/categories/{id}"
+    DELETE_CATEGORY: "/categories/{id}",
+    CATEGORY_IMPORT: "/categories/import"
 };
