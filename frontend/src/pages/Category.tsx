@@ -1,21 +1,21 @@
-import {LoaderCircle, Plus} from "lucide-react";
+import {Download, LoaderCircle, Plus, Upload} from "lucide-react";
 import Dashboard from "../components/Dashboard";
 import {useUser} from "../hooks/useUser";
-import CategoryList from "../components/CategoryList";
-import Pagination from "../components/Pagination";
+import CategoryList from "../components/categories/CategoryList";
+import Pagination from "../components/common/Pagination";
 import {useEffect, useState} from "react";
 import axiosConfig from "../utilities/AxiosUtility";
 import {API_ENDPOINTS} from "../utilities/apiEndpoint";
 import toast from "react-hot-toast";
-import Modal from "../components/Modal";
-import AddCategoryForm from "../components/AddCategoryForm";
+import Modal from "../components/common/Modal";
+import AddCategoryForm from "../components/categories/AddCategoryForm";
 import type {CategoryData} from "../types/CategoryData";
-import EditCategoryForm from "../components/EditCategoryForm";
-import DeleteCategoryConfirm from "../components/DeleteCategoryConfirm";
+import EditCategoryForm from "../components/categories/EditCategoryForm";
+import DeleteCategoryConfirm from "../components/categories/DeleteCategoryConfirm";
 import {useCategory} from "../hooks/useCategory";
-import CategoryFilterBar from "../components/CategoryFilterBar";
+import CategoryFilterBar from "../components/categories/CategoryFilterBar";
 import type {CategoryPage} from "../types/CategoryPage";
-import CategoryImportModal from "../components/CategoryImportModal";
+import CategoryImportModal from "../components/categories/CategoryImportModal";
 
 export default function Category() {
     useUser();
@@ -119,22 +119,21 @@ export default function Category() {
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => setOpenImportModal(true)}
-                            className="rounded-lg p-3 border border-purple-400 text-purple-300 bg-purple-500 hover:shadow-[0_0_15px_rgba(168,85,247,0.6)] hover:cursor-pointer"
+                            className="flex items-center justify-center gap-3 rounded-lg p-3 bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 hover:shadow-[0_0_15px_rgba(34,211,238,0.6)] hover:cursor-pointer"
                         >
-                            Import
+                            <Upload size={18} /> Import
                         </button>
                         <button
                             onClick={() => handleExport()}
-                            className="rounded-lg p-3 border border-emerald-400 text-emerald-300 bg-emerald-500 hover:shadow-[0_0_15px_rgba(16,185,129,0.6)] hover:cursor-pointer"
+                            className="flex items-center justify-center gap-3 rounded-lg p-3 bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 hover:shadow-[0_0_15px_rgba(34,211,238,0.6)] hover:cursor-pointer"
                         >
-                            Export
+                            <Download size={18} /> Export
                         </button>
                         <button
                             onClick={() => setOpenAddCategoryModal(true)}
-                            className="flex items-center gap-2 rounded-lg px-4 py-2 bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 hover:shadow-[0_0_15px_rgba(34,211,238,0.6)] hover:cursor-pointer"
+                            className="flex items-center justify-center gap-3 rounded-lg p-3 bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 hover:shadow-[0_0_15px_rgba(34,211,238,0.6)] hover:cursor-pointer"
                         >
-                            <Plus size={18} />
-                            Add Category
+                            <Plus size={18} /> Add
                         </button>
                     </div>
                 </div>

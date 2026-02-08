@@ -1,9 +1,11 @@
 import {FileType} from "lucide-react";
 import {useState} from "react";
 import toast from "react-hot-toast";
-import axiosConfig from "../utilities/AxiosUtility";
-import {API_ENDPOINTS} from "../utilities/apiEndpoint";
-import {FilePicker} from "./FilePicker";
+import axiosConfig from "../../utilities/AxiosUtility";
+import {API_ENDPOINTS} from "../../utilities/apiEndpoint";
+import {FilePicker} from "../common/FilePicker";
+import type {ImportResponse} from "../../types/ImportResponse";
+import ImportErrorModal from "./ImportErrorModal";
 
 type FileType = "csv" | "tsv" | "xlsx" | "json";
 const EXAMPLES: Record<FileType, String> = {
@@ -41,6 +43,8 @@ export default function CategoryImportModal({onClose}: Props) {
     const [fileType, setFileType] = useState<FileType>("csv");
     const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
+    const [result, setResult] = useState<ImportResponse | null>(null);
+    const [showErrors, setShowErrors] = useState(false);
 
     const handleImport = async () => {
         if (!file) {
@@ -51,15 +55,19 @@ export default function CategoryImportModal({onClose}: Props) {
         formData.append("file", file);
         setLoading(true);
         try {
-            const response = await axiosConfig.post(API_ENDPOINTS.CATEGORY_IMPORT, formData, {
+            const response = await axiosConfig.post<ImportResponse>(API_ENDPOINTS.CATEGORY_IMPORT, formData, {
                 headers: {"Content-Type": "multipart/form-data"}
             });
-            toast.success("Import completed. " + response.data);
+            setResult(response.data);
+            if (response.data.failed > 0) setShowErrors(true);
+            else {
+                toast.success(`Import ${response.data.success} categories`);
+                onClose();
+            }
         } catch (e: any) {
             toast.error(e?.response?.data?.message || "Import failed");
         } finally {
             setLoading(false);
-            onClose();
         }
     };
 
@@ -100,6 +108,18 @@ export default function CategoryImportModal({onClose}: Props) {
                     {loading ? "Importing..." : "Import"}
                 </button>
             </div>
+            {result && (
+                <ImportErrorModal
+                    isOpen={showErrors}
+                    success={result.success}
+                    failed={result.failed}
+                    errors={result.errors}
+                    onClose={() => {
+                        setShowErrors(false);
+                        onClose();
+                    }}
+                />
+            )}
         </div>
     );
 }

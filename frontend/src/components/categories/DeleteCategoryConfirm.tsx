@@ -1,5 +1,5 @@
 import {Trash} from "lucide-react";
-import type {CategoryData} from "../types/CategoryData";
+import type {CategoryData} from "../../types/CategoryData";
 
 interface Props {
     category: CategoryData;

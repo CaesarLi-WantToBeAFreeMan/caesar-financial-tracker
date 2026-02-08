@@ -1,5 +1,6 @@
 import {Box, Pen, Trash} from "lucide-react";
-import type {CategoryData} from "../types/CategoryData";
+import type {CategoryData} from "../../types/CategoryData";
+import {getFirstChar, isIconImage} from "../../utilities/icon";
 
 interface Props {
     categories: CategoryData[];
@@ -9,8 +10,6 @@ interface Props {
 }
 
 export default function CategoryList({categories, totalElements, onEditCategory, onDeleteCategory}: Props) {
-    const isImageSource = (icon: string | null | undefined) =>
-        !icon ? false : icon.startsWith("http") || icon.startsWith("https") || icon.startsWith("data:image");
     return (
         <div className="rounded-xl bg-[#0b0f1a] border border-cyan-500/20 p-6 shadow-[0_0_40px_rgba(34,211,238,0.08)]">
             <div className="mb-5 flex items-center justify-between">
@@ -36,20 +35,20 @@ export default function CategoryList({categories, totalElements, onEditCategory,
                             className="group relative flex items-center gap-4 rounded-lg p-4 bg-[#111827]/80 backdrop-blur border border-white/5 transition-all duration-300 hover:border-cyan-400/40 hover:shadow-[0_0_30px_rgba(34,211,238,0.18)]"
                         >
                             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-cyan-500/10 border border-cyan-400/30 text-cyan-300 transition-all duration-300 group-hover:shadow-[0_0_18px_rgba(34,211,238,0.5)] group-hover:border-cyan-400/60">
-                                {!category.icon ? (
-                                    <Box size={22} />
-                                ) : isImageSource(category.icon) ? (
-                                    <img
-                                        src={category.icon}
-                                        alt={category.name}
-                                        className="h-6 w-6 object-contain filter brightness-110"
-                                    />
+                                {category.icon ? (
+                                    isIconImage(category.icon) ? (
+                                        <img
+                                            src={category.icon}
+                                            alt={category.name}
+                                            className="h-5 w-5 object-contain"
+                                        />
+                                    ) : (
+                                        <span className="text-lg font-semibold leading-none">
+                                            {getFirstChar(category.icon)}
+                                        </span>
+                                    )
                                 ) : (
-                                    <img
-                                        src={`https://placehold.co/100x100/111827/22d3ee?text=${encodeURIComponent(category.icon)}&font=raleway`}
-                                        className="h-6 w-6 rounded-sm"
-                                        alt="category icon"
-                                    />
+                                    <Box size={23} />
                                 )}
                             </div>
                             <div className="flex-1 min-w-0">

@@ -1,5 +1,5 @@
-import type {CategoryOrder} from "../types/CategoryOrder";
-import type {CategoryType} from "../types/CategoryType";
+import type {CategoryOrder} from "../../types/CategoryOrder";
+import type {CategoryType} from "../../types/CategoryType";
 
 interface Props {
     type: CategoryType;
