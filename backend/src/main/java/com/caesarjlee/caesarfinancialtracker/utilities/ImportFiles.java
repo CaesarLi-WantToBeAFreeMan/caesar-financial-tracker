@@ -1,10 +1,11 @@
 package com.caesarjlee.caesarfinancialtracker.utilities;
 
+import com.caesarjlee.caesarfinancialtracker.dtos.ImportResponse;
 import com.caesarjlee.caesarfinancialtracker.entities.CategoryEntity;
 import com.caesarjlee.caesarfinancialtracker.entities.ExpenseEntity;
 import com.caesarjlee.caesarfinancialtracker.entities.IncomeEntity;
-import com.caesarjlee.caesarfinancialtracker.exceptions.categories.CategoryNameEmptyException;
-import com.caesarjlee.caesarfinancialtracker.exceptions.categories.InvalidCategoryTypeException;
+import com.caesarjlee.caesarfinancialtracker.entities.ProfileEntity;
+import com.caesarjlee.caesarfinancialtracker.exceptions.categories.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.files.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.files.entities.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.files.filetypes.*;
@@ -37,10 +38,12 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
@@ -54,9 +57,11 @@ public class ImportFiles {
     private final ExpenseRepository  expenseRepository;
     private final ObjectMapper       objectMapper;
     private final ProfileService     profileService;
+
     private static final Set<String> CATEGORY_COLUMNS       = Set.of("name", "type", "icon");
     private static final Set<String> INCOME_EXPENSE_COLUMNS = Set.of("name", "date", "price", "icon", "description");
     private static final Set<String> ALLOWED_CATEGORY_TYPES = Set.of("income", "expense");
+
     private final List<DateTimeFormatter> FORMATTERS        = List.of(
         // numeric day-month-year
         DateTimeFormatter.ofPattern("d-M-uuuu"), DateTimeFormatter.ofPattern("d/M/uuuu"),
@@ -85,10 +90,10 @@ public class ImportFiles {
 
     private List<String []> readCsv(MultipartFile file, char separator) {
         try(Reader reader = new InputStreamReader(file.getInputStream())) {
-            CSVReader csvReader = new CSVReaderBuilder(reader)
-                                      .withCSVParser(new CSVParserBuilder().withSeparator(separator).build())
-                                      .build();
-            return csvReader.readAll();
+            return new CSVReaderBuilder(reader)
+                .withCSVParser(new CSVParserBuilder().withSeparator(separator).build())
+                .build()
+                .readAll();
         } catch(Exception e) {
             throw separator == ',' ? new InvalidCsvFileException(file.getOriginalFilename())
                                    : new InvalidTsvFileException(file.getOriginalFilename());
@@ -101,13 +106,13 @@ public class ImportFiles {
             DataFormatter   formatter = new DataFormatter();
             List<String []> data      = new ArrayList<>();
             for(Row row : sheet) {
-                short last = row.getLastCellNum();
-                if(last <= 0)
+                int size = row.getLastCellNum();
+                if(size <= 0)
                     continue;
-                String [] rowData = new String [last];
-                for(int i = 0; i < last; i++)
-                    rowData [i] = formatter.formatCellValue(row.getCell(i));
-                data.add(rowData);
+                String [] line = new String [size];
+                for(int i = 0; i < size; i++)
+                    line [i] = formatter.formatCellValue(row.getCell(i));
+                data.add(line);
             }
             return data;
         } catch(Exception e) {
@@ -126,8 +131,8 @@ public class ImportFiles {
             for(Map<String, Object> row : raw) {
                 String [] line = new String [headers.size()];
                 for(int i = 0; i < headers.size(); i++) {
-                    Object v = row.get(headers.get(i));
-                    line [i] = v == null ? null : String.valueOf(v);
+                    Object value = row.get(headers.get(i));
+                    line [i]     = value == null ? null : value.toString();
                 }
                 table.add(line);
             }
@@ -137,86 +142,88 @@ public class ImportFiles {
         }
     }
 
-    private Map<String, Long> handleImport(List<String []> data, Object entity) {
-        if(data == null || data.isEmpty())
+    private ImportResponse handleImport(List<String []> table, Object entity) {
+        if(table == null || table.isEmpty())
             throw new EmptyFileException();
-        String [] headers = normalizeHeaders(data.get(0));
+        ImportResponse response = new ImportResponse();
+        String []      headers  = normalizeHeaders(table.get(0));
         validateHeaders(headers, entity);
-        long success = 0, failed = 0;
-        for(int rowIndex = 1; rowIndex < data.size(); rowIndex++) {
-            String [] row      = data.get(rowIndex);
-            int       humanRow = rowIndex + 1;
-            try {
-                if(entity instanceof CategoryEntity) {
-                    CategoryEntity category = parseCategory(headers, row, humanRow);
+        ProfileEntity profile = profileService.getCurrentProfile();
+        if(entity instanceof CategoryEntity) {
+            Set<String> existingNames = categoryRepository.findByProfileId(profile.getId())
+                                            .stream()
+                                            .map(category -> category.getName().toLowerCase(Locale.ENGLISH))
+                                            .collect(Collectors.toSet());
+            Set<String> seenNames = new HashSet<>();
+            for(int i = 1; i < table.size(); i++) {
+                try {
+                    CategoryEntity category = parseCategory(headers, table.get(i), profile);
+                    String         key      = category.getName().toLowerCase(Locale.ENGLISH);
+                    if(seenNames.contains(key) || existingNames.contains(key)) {
+                        response.fail("duplicate name at row #" + (i + 1));
+                        continue;
+                    }
+                    seenNames.add(key);
                     categoryRepository.save(category);
-                } else if(entity instanceof IncomeEntity) {
-                    IncomeEntity income = parseIncome(headers, row, humanRow);
-                    incomeRepository.save(income);
-                } else if(entity instanceof ExpenseEntity) {
-                    ExpenseEntity expense = parseExpense(headers, row, humanRow);
-                    expenseRepository.save(expense);
-                } else
-                    throw new InvalidEntityException(entity.getClass().getSimpleName());
-                success++;
-            } catch(RuntimeException e) {
-                failed++;
+                    response.success();
+                } catch(CategoryNameEmptyException e) {
+                    response.fail("invalid name at row #" + (i + 1));
+                } catch(InvalidCategoryTypeException e) {
+                    response.fail("invalid type at row #" + (i + 1));
+                } catch(Exception e) {
+                    response.fail("invalid data at row #" + (i + 1));
+                }
             }
+        } else if(entity instanceof IncomeEntity) {
+        } else if(entity instanceof ExpenseEntity) {
+        } else {
+            throw new InvalidEntityException(entity.getClass().getSimpleName());
         }
-        return Map.of("success", success, "failed", failed);
+        return response;
     }
 
-    private String [] normalizeHeaders(String [] rawHeaders) {
-        if(rawHeaders == null || rawHeaders.length == 0)
-            throw new InvalidRequiredColumnException("header");
-        String [] headers = new String [rawHeaders.length];
-        for(int i = 0; i < rawHeaders.length; i++)
-            headers [i] = rawHeaders [i] == null ? "" : rawHeaders [i].trim().toLowerCase(Locale.ENGLISH);
-        return headers;
+    private String [] normalizeHeaders(String [] raw) {
+        return Arrays.stream(raw)
+            .map(header -> header == null ? "" : header.trim().toLowerCase(Locale.ENGLISH))
+            .toArray(String [] ::new);
     }
 
     private void validateHeaders(String [] headers, Object entity) {
-        Set<String> allowed, required;
         if(entity instanceof CategoryEntity) {
-            allowed  = CATEGORY_COLUMNS;
-            required = Set.of("name", "type");
-        } else if(entity instanceof IncomeEntity || entity instanceof ExpenseEntity) {
-            allowed  = INCOME_EXPENSE_COLUMNS;
-            required = Set.of("name", "date", "price");
+            for(String header : headers)
+                if(!CATEGORY_COLUMNS.contains(header))
+                    throw new InvalidRequiredColumnException(header);
+            List<String> requiredColumns = List.of("name", "type");
+            for(String column : requiredColumns)
+                if(!Arrays.asList(headers).contains(column))
+                    throw new InvalidRequiredColumnException(column);
+        } else if(entity instanceof IncomeEntity) {
+        } else if(entity instanceof ExpenseEntity) {
         } else
             throw new InvalidEntityException(entity.getClass().getSimpleName());
-        for(String header : headers)
-            if(!allowed.contains(header))
-                throw new InvalidRequiredColumnException(header);
-        for(String column : required) {
-            if(!Arrays.asList(headers).contains(column))
-                throw new InvalidRequiredColumnException(column);
-        }
     }
 
-    private CategoryEntity parseCategory(String [] headers, String [] row, int humanRow) {
+    private CategoryEntity parseCategory(String [] headers, String [] row, ProfileEntity profile) {
         String name = null, type = null, icon = null;
         for(int i = 0; i < headers.length; i++) {
-            String key = headers [i], value = getCell(row, i);
-            switch(key) {
+            String value = getCell(row, i);
+            switch(headers [i]) {
             case "name" -> name = value;
             case "type" -> type = value;
             case "icon" -> icon = value;
-            default       -> throw new InvalidRequiredColumnException(key);
+            default       -> throw new InvalidRequiredColumnException(headers [i]);
             }
         }
         if(name == null || name.isBlank())
-            throw new CategoryNameEmptyException(humanRow);
-        String normalizedType = type == null ? "" : type.trim().toLowerCase(Locale.ENGLISH);
-        if(!ALLOWED_CATEGORY_TYPES.contains(normalizedType))
-            throw new InvalidCategoryTypeException(type, humanRow);
-        CategoryEntity category = CategoryEntity.builder()
-                                      .name(name)
-                                      .type(type)
-                                      .icon(icon == null || icon.isBlank() ? null : icon.trim())
-                                      .profile(profileService.getCurrentProfile())
-                                      .build();
-        return category;
+            throw new CategoryNameEmptyException();
+        if(type == null || !ALLOWED_CATEGORY_TYPES.contains(type.toLowerCase()))
+            throw new InvalidCategoryTypeException(type);
+        return CategoryEntity.builder()
+            .name(name.trim())
+            .type(type.toLowerCase())
+            .icon(icon == null || icon.isBlank() ? null : icon.trim())
+            .profile(profile)
+            .build();
     }
 
     private IncomeEntity parseIncome(String [] headers, String [] row, int humanRow) {
@@ -304,17 +311,13 @@ public class ImportFiles {
         }
     }
 
-    public String importData(MultipartFile file, Object entity) throws Exception {
+    public ImportResponse importData(MultipartFile file, Object entity) {
         if(file == null || file.isEmpty())
             throw new EmptyFileException();
         String filename = file.getOriginalFilename();
-        if(filename == null || filename.isBlank())
+        if(filename == null || !filename.contains("."))
             throw new InvalidFilenameException();
-        filename        = filename.toLowerCase(Locale.ENGLISH);
-        int dotPosition = filename.lastIndexOf('.');
-        if(dotPosition < 0 || dotPosition == filename.length() - 1)
-            throw new InvalidFilenameException();
-        String          filetype = filename.substring(dotPosition + 1);
+        String          filetype = filename.substring(filename.lastIndexOf('.') + 1).toLowerCase(Locale.ENGLISH);
         List<String []> table    = switch(filetype) {
             case "csv"           -> readCsv(file, ',');
             case "tsv"           -> readCsv(file, '\t');
@@ -322,7 +325,6 @@ public class ImportFiles {
             case "json"          -> readJson(file);
             default                -> throw new InvalidFiletypeException(filetype);
         };
-        Map<String, Long> results = handleImport(table, entity);
-        return String.format("%d success, %d failed", results.get("success"), results.get("failed"));
+        return handleImport(table, entity);
     }
 }

@@ -2,6 +2,7 @@ package com.caesarjlee.caesarfinancialtracker.controllers;
 
 import com.caesarjlee.caesarfinancialtracker.dtos.CategoryRequest;
 import com.caesarjlee.caesarfinancialtracker.dtos.CategoryResponse;
+import com.caesarjlee.caesarfinancialtracker.dtos.ImportResponse;
 import com.caesarjlee.caesarfinancialtracker.enumerations.CategoryOrders;
 import com.caesarjlee.caesarfinancialtracker.exceptions.categories.CategoryOrderNotFoundException;
 import com.caesarjlee.caesarfinancialtracker.services.CategoryService;
@@ -56,7 +57,7 @@ public class CategoryController {
     }
 
     @PostMapping("/import")
-    public ResponseEntity<String> importCategories(@RequestParam("file") MultipartFile file) throws Exception {
+    public ResponseEntity<ImportResponse> importCategories(@RequestParam("file") MultipartFile file) throws Exception {
         return ResponseEntity.ok(categoryService.importCategories(file));
     }
 }

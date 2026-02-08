@@ -2,6 +2,7 @@ package com.caesarjlee.caesarfinancialtracker.services;
 
 import com.caesarjlee.caesarfinancialtracker.dtos.CategoryRequest;
 import com.caesarjlee.caesarfinancialtracker.dtos.CategoryResponse;
+import com.caesarjlee.caesarfinancialtracker.dtos.ImportResponse;
 import com.caesarjlee.caesarfinancialtracker.entities.CategoryEntity;
 import com.caesarjlee.caesarfinancialtracker.entities.ProfileEntity;
 import com.caesarjlee.caesarfinancialtracker.enumerations.CategoryOrders;
@@ -94,7 +95,7 @@ public class CategoryService {
         }
     }
 
-    public String importCategories(MultipartFile file) throws Exception {
+    public ImportResponse importCategories(MultipartFile file) {
         return importFiles.importData(file, new CategoryEntity());
     }
 }
