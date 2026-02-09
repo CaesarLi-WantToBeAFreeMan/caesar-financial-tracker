@@ -8,5 +8,6 @@ export const API_ENDPOINTS = {
     ADD_CATEGORY: "/categories",
     UPDATE_CATEGORY: "/categories/{id}",
     DELETE_CATEGORY: "/categories/{id}",
-    CATEGORY_IMPORT: "/categories/import"
+    CATEGORY_IMPORT: "/categories/import",
+    CATEGORY_EXPORT: "/categories/export/{type}"
 };
