@@ -13,6 +13,7 @@ import com.caesarjlee.caesarfinancialtracker.exceptions.categories.CategoryNotFo
 import com.caesarjlee.caesarfinancialtracker.exceptions.categories.CategoryTypeNotFoundException;
 import com.caesarjlee.caesarfinancialtracker.exceptions.pages.PageSizeException;
 import com.caesarjlee.caesarfinancialtracker.repositories.CategoryRepository;
+import com.caesarjlee.caesarfinancialtracker.utilities.ExportFiles;
 import com.caesarjlee.caesarfinancialtracker.utilities.ImportFiles;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -34,6 +35,7 @@ public class CategoryService {
     private final CategoryRepository categoryRepository;
     private final ProfileService     profileService;
     private final ImportFiles        importFiles;
+    private final ExportFiles        exportFiles;
 
     private CategoryResponse         toResponse(CategoryEntity entity) {
         return new CategoryResponse(entity.getId(), entity.getName(), entity.getType(), entity.getIcon(),
@@ -97,5 +99,9 @@ public class CategoryService {
 
     public ImportResponse importCategories(MultipartFile file) {
         return importFiles.importData(file, new CategoryEntity());
+    }
+
+    public byte [] exportCategories(String type) {
+        return exportFiles.exportData(type, new CategoryEntity());
     }
 }
