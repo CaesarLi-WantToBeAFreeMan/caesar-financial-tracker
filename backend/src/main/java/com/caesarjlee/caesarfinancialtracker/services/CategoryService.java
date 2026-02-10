@@ -22,10 +22,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -63,31 +61,30 @@ public class CategoryService {
         return validOrder;
     }
 
+    private Pageable validPage(String order, int page, int size) {
+        if(size < 1 || size > 120)
+            throw new PageSizeException("page size must be [1, 120]");
+        return PageRequest.of(page, size, validOrder(order).getSort());
+    }
+
     public CategoryResponse createCategory(CategoryRequest request) {
         ProfileEntity profile = profileService.getCurrentProfile();
         if(categoryRepository.existsByNameAndTypeAndProfileId(request.name(), request.type(), profile.getId()))
             throw new CategoryAlreadyExistException(request.name());
-        CategoryEntity entity = CategoryEntity.builder()
-                                    .name(request.name())
-                                    .type(request.type())
-                                    .icon(request.icon())
-                                    .profile(profile)
-                                    .build();
-        entity = categoryRepository.save(entity);
-        return toResponse(entity);
+        return toResponse(categoryRepository.save(CategoryEntity.builder()
+                                                      .name(request.name())
+                                                      .type(request.type())
+                                                      .icon(request.icon())
+                                                      .profile(profile)
+                                                      .build()));
     }
 
-    public Page<CategoryResponse> getCategoriesByTypeAndOrder(String type, String order, int page, int size) {
-        if(size < 1 || size > 120)
-            throw new PageSizeException("page size must be [1, 120]");
-        Long                 profileId = profileService.getCurrentProfile().getId();
-        Pageable             pageable  = PageRequest.of(page, size, validOrder(order).getSort());
-        CategoryType         validType = validType(type);
-        Page<CategoryEntity> categories =
-            validType == CategoryType.ALL
-                ? categoryRepository.findByProfileId(profileId, pageable)
-                : categoryRepository.findByTypeAndProfileId(validType.name(), profileId, pageable);
-        return categories.map(this::toResponse);
+    public Page<CategoryResponse> getCategories(String type, String name, String order, int page, int size) {
+        Long         profileId = profileService.getCurrentProfile().getId();
+        Pageable     pageable  = validPage(order, page, size);
+        CategoryType validType = validType(type);
+        String       typeName  = validType == CategoryType.ALL ? null : validType.name();
+        return categoryRepository.search(profileId, typeName, name, pageable).map(this::toResponse);
     }
 
     public CategoryResponse updateCategory(Long id, CategoryRequest request) {
@@ -119,18 +116,5 @@ public class CategoryService {
 
     public byte [] exportCategories(String type) {
         return exportFiles.exportData(type, new CategoryEntity());
-    }
-
-    public Page<CategoryResponse> searchCategories(String type, String name, String order, int page, int size) {
-        if(size < 1 || size > 120)
-            throw new PageSizeException("page size must be [1, 120]");
-        Long                 profileId = profileService.getCurrentProfile().getId();
-        Pageable             pageable  = PageRequest.of(page, size, validOrder(order).getSort());
-        CategoryType         validType = validType(type);
-        Page<CategoryEntity> categories =
-            validType == CategoryType.ALL
-                ? categoryRepository.findByProfileIdAndName(profileId, name, pageable)
-                : categoryRepository.findByProfileIdAndTypeAndName(profileId, validType.name(), name, pageable);
-        return categories.map(this::toResponse);
     }
 }

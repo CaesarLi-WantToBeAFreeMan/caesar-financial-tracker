@@ -22,29 +22,25 @@ public class CategoryController {
     private final CategoryService categoryService;
 
     @PostMapping
-    public ResponseEntity<CategoryResponse> createCategory(@Valid @RequestBody CategoryRequest request) {
-        CategoryResponse response = categoryService.createCategory(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    public ResponseEntity<CategoryResponse> create(@RequestBody @Valid CategoryRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(categoryService.createCategory(request));
     }
 
-    @GetMapping("/filter")
+    @GetMapping
     public ResponseEntity<Page<CategoryResponse>>
-    getCategoriesByTypeAndOrder(@RequestParam(defaultValue = "all") String                type,
-                                @RequestParam(defaultValue = "CREATED_DESCENDING") String order,
-                                @RequestParam(defaultValue = "0") int                     page,
-                                @RequestParam(defaultValue = "30") int                    size) {
-        return ResponseEntity.ok(categoryService.getCategoriesByTypeAndOrder(type, order, page, size));
+    getCategories(@RequestParam(defaultValue = "all") String type, @RequestParam(required = false) String name,
+                  @RequestParam(defaultValue = "CREATED_DESCENDING") String order,
+                  @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "30") int size) {
+        return ResponseEntity.ok(categoryService.getCategories(type, name, order, page, size));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CategoryResponse> updateCategory(@PathVariable Long                  id,
-                                                           @Valid @RequestBody CategoryRequest request) {
-        CategoryResponse updated = categoryService.updateCategory(id, request);
-        return ResponseEntity.ok(updated);
+    public ResponseEntity<CategoryResponse> update(@PathVariable Long id, @RequestBody @Valid CategoryRequest request) {
+        return ResponseEntity.ok(categoryService.updateCategory(id, request));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
         categoryService.deleteCategory(id);
         return ResponseEntity.noContent().build();
     }
@@ -55,18 +51,9 @@ public class CategoryController {
     }
 
     @GetMapping("/export/{type}")
-    public ResponseEntity<byte []> exportCategories(@PathVariable String type) {
-        String filename = "categories." + type;
+    public ResponseEntity<byte []> export(@PathVariable String type) {
         return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=categories." + type)
             .body(categoryService.exportCategories(type));
-    }
-
-    @GetMapping("search")
-    public ResponseEntity<Page<CategoryResponse>>
-    searchCategories(@RequestParam(defaultValue = "all") String type, @RequestParam(required = false) String name,
-                     @RequestParam(defaultValue = "CREATED_DESCENDING") String order,
-                     @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "30") int size) {
-        return ResponseEntity.ok(categoryService.searchCategories(type, name, order, page, size));
     }
 }

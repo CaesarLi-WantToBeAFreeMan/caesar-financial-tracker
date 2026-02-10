@@ -8,31 +8,20 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface CategoryRepository extends JpaRepository<CategoryEntity, Long> {
-    List<CategoryEntity>     findByProfileId(Long profileId);
-    Page<CategoryEntity>     findByProfileId(Long profileId, Pageable pageable);
     Optional<CategoryEntity> findByIdAndProfileId(Long id, Long profileId);
-    List<CategoryEntity>     findAllByTypeAndProfileId(String type, Long profileId);
-    Page<CategoryEntity>     findByTypeAndProfileId(String type, Long profileId, Pageable pageable);
     boolean                  existsByNameAndTypeAndProfileId(String name, String type, Long profileId);
+    Page<CategoryEntity>     findByProfileId(Long profileId, Pageable pageable);
+    Page<CategoryEntity>     findByTypeAndProfileId(String type, Long profileId, Pageable pageable);
     @Query("""
         SELECT c
         FROM CategoryEntity c
         WHERE c.profile.id = :profileId
-            AND c.type = :type
+            AND (:type IS NULL OR c.type = :type)
             AND (:name IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :name, '%')))
     """)
-    Page<CategoryEntity> findByProfileIdAndTypeAndName(@Param("profileId") Long profileId, @Param("type") String type,
-                                                       @Param("name") String name, Pageable pageable);
-    @Query("""
-        SELECT c
-        FROM CategoryEntity c
-        WHERE c.profile.id = :profileId
-            AND (:name IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :name, '%')))
-    """)
-    Page<CategoryEntity> findByProfileIdAndName(@Param("profileId") Long profileId, @Param("name") String name,
-                                                Pageable pageable);
+    Page<CategoryEntity> search(@Param("profileId") Long profileId, @Param("type") String type,
+                                @Param("name") String name, Pageable pageable);
 }
