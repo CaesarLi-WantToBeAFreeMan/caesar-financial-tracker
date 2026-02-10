@@ -1,4 +1,4 @@
-import {Download, LoaderCircle, Plus, Upload} from "lucide-react";
+import {Download, LoaderCircle, Plus, Search, SearchX, Upload} from "lucide-react";
 import Dashboard from "../components/Dashboard";
 import {useUser} from "../hooks/useUser";
 import CategoryList from "../components/categories/CategoryList";
@@ -20,13 +20,24 @@ import CategoryImportModal from "../components/categories/CategoryImportModal";
 export default function Category() {
     useUser();
 
-    const [loading, setLoading] = useState(false);
     const categories = useCategory();
     const [page, setPage] = useState<CategoryPage | null>(null);
-    const [openImportModal, setOpenImportModal] = useState(false);
+    const [loading, setLoading] = useState(false);
+
+    //search
+    const [keyword, setKeyword] = useState("");
+    const triggerSearch = () => {
+        categories.setPage(0);
+        fetchCategories();
+    };
+
+    //export
     const [openExportMenu, setOpenExportMenu] = useState(false);
     const [exporting, setExporting] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+
+    //modals
+    const [openImportModal, setOpenImportModal] = useState(false);
     const [openAddCategoryModal, setOpenAddCategoryModal] = useState(false);
     const [openEditCategoryModal, setOpenEditCategoryModal] = useState(false);
     const [openDeleteCategoryModal, setOpenDeleteCategoryModal] = useState(false);
@@ -34,10 +45,20 @@ export default function Category() {
 
     const fetchCategories = async () => {
         setLoading(true);
+        const isSearching = keyword.trim().length > 0;
         try {
-            const response = await axiosConfig.get(API_ENDPOINTS.GET_CATEGORIES, {
-                params: {type: categories.type, order: categories.order, page: categories.page, size: categories.size}
-            });
+            const response = await axiosConfig.get(
+                isSearching ? API_ENDPOINTS.CATEGORY_SEARCH : API_ENDPOINTS.GET_CATEGORIES,
+                {
+                    params: {
+                        type: categories.type,
+                        name: isSearching ? keyword.trim() : undefined,
+                        order: categories.order,
+                        page: categories.page,
+                        size: categories.size
+                    }
+                }
+            );
             setPage({
                 content: response.data.content,
                 totalElements: response.data.total_elements,
@@ -57,11 +78,7 @@ export default function Category() {
     const addCategory = async (category: CategoryData) => {
         setOpenAddCategoryModal(false);
         try {
-            await axiosConfig.post(API_ENDPOINTS.ADD_CATEGORY, {
-                name: category.name,
-                type: category.type,
-                icon: category.icon
-            });
+            await axiosConfig.post(API_ENDPOINTS.ADD_CATEGORY, category);
             toast.success("Created successfully");
             fetchCategories();
         } catch (error: any) {
@@ -70,16 +87,9 @@ export default function Category() {
     };
 
     const changeCategory = async (category: CategoryData) => {
-        if (!category.id) {
-            toast.error("Invalid category ID");
-            return;
-        }
+        if (!category.id) return;
         try {
-            await axiosConfig.put(API_ENDPOINTS.UPDATE_CATEGORY.replace("{id}", String(category.id)), {
-                name: category.name,
-                type: category.type,
-                icon: category.icon
-            });
+            await axiosConfig.put(API_ENDPOINTS.UPDATE_CATEGORY.replace("{id}", String(category.id)), category);
             toast.success("Updated successfully");
             fetchCategories();
         } catch (error: any) {
@@ -131,7 +141,7 @@ export default function Category() {
 
     useEffect(() => {
         fetchCategories();
-    }, [categories.type, categories.order, categories.page, categories.size]);
+    }, [categories.type, categories.order, categories.page, categories.size, keyword]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -146,7 +156,7 @@ export default function Category() {
         <Dashboard activeRoute="Category">
             <div className="mx-auto my-6">
                 <div className="mb-6 flex items-center justify-between">
-                    <h2 className="text-2xl font-semibold tracking-wide text-cyan-300">All Categories</h2>
+                    <h2 className="text-2xl font-semibold text-cyan-300">All Categories</h2>
 
                     <div className="flex items-center gap-3">
                         <button
@@ -213,6 +223,27 @@ export default function Category() {
                         categories.setPage(0);
                     }}
                 />
+
+                <div className="mt-3-flex items-center gap-3 mb-3">
+                    <div className="relative flex-1">
+                        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-cyan-400" />
+                        <input
+                            value={keyword}
+                            onChange={k => setKeyword(k.target.value)}
+                            onKeyDown={k => k.key === "Enter" && triggerSearch()}
+                            placeholder="Search categories..."
+                            className="w-full rounded-lg bg-slate-900 border border-cyan-400/30 py-3 pl-10 pr-10 text-cyan-200 placeholder-cyan-400/40 focus:ring-2 focus:ring-cyan-400/40"
+                        />
+                        {keyword && (
+                            <button
+                                onClick={() => setKeyword("")}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-cyan-400 hover:text-cyan-300 hover:cursor-pointer"
+                            >
+                                <SearchX size={18} />
+                            </button>
+                        )}
+                    </div>
+                </div>
 
                 {loading ? (
                     <div className="flex items-center justify-center py-20">

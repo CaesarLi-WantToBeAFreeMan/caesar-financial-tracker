@@ -3,11 +3,7 @@ package com.caesarjlee.caesarfinancialtracker.controllers;
 import com.caesarjlee.caesarfinancialtracker.dtos.CategoryRequest;
 import com.caesarjlee.caesarfinancialtracker.dtos.CategoryResponse;
 import com.caesarjlee.caesarfinancialtracker.dtos.ImportResponse;
-import com.caesarjlee.caesarfinancialtracker.entities.ProfileEntity;
-import com.caesarjlee.caesarfinancialtracker.enumerations.CategoryOrders;
-import com.caesarjlee.caesarfinancialtracker.exceptions.categories.CategoryOrderNotFoundException;
 import com.caesarjlee.caesarfinancialtracker.services.CategoryService;
-import com.caesarjlee.caesarfinancialtracker.services.ProfileService;
 
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
@@ -24,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/categories")
 public class CategoryController {
     private final CategoryService categoryService;
-    private final ProfileService  profileService;
 
     @PostMapping
     public ResponseEntity<CategoryResponse> createCategory(@Valid @RequestBody CategoryRequest request) {
@@ -38,13 +33,7 @@ public class CategoryController {
                                 @RequestParam(defaultValue = "CREATED_DESCENDING") String order,
                                 @RequestParam(defaultValue = "0") int                     page,
                                 @RequestParam(defaultValue = "30") int                    size) {
-        CategoryOrders validOrder;
-        try {
-            validOrder = CategoryOrders.valueOf(order.toUpperCase());
-        } catch(Exception e) {
-            throw new CategoryOrderNotFoundException(order);
-        }
-        return ResponseEntity.ok(categoryService.getCategoriesByTypeAndOrder(type, validOrder, page, size));
+        return ResponseEntity.ok(categoryService.getCategoriesByTypeAndOrder(type, order, page, size));
     }
 
     @PutMapping("/{id}")
@@ -67,10 +56,17 @@ public class CategoryController {
 
     @GetMapping("/export/{type}")
     public ResponseEntity<byte []> exportCategories(@PathVariable String type) {
-        ProfileEntity profile  = profileService.getCurrentProfile();
-        String        filename = profile.getFirstName() + "_" + profile.getLastName() + "_categories." + type;
+        String filename = "categories." + type;
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
             .body(categoryService.exportCategories(type));
+    }
+
+    @GetMapping("search")
+    public ResponseEntity<Page<CategoryResponse>>
+    searchCategories(@RequestParam(defaultValue = "all") String type, @RequestParam(required = false) String name,
+                     @RequestParam(defaultValue = "CREATED_DESCENDING") String order,
+                     @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "30") int size) {
+        return ResponseEntity.ok(categoryService.searchCategories(type, name, order, page, size));
     }
 }

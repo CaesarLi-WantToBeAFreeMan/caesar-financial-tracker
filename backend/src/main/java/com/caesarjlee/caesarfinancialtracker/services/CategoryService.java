@@ -10,6 +10,7 @@ import com.caesarjlee.caesarfinancialtracker.enumerations.CategoryType;
 import com.caesarjlee.caesarfinancialtracker.exceptions.categories.CategoryAlreadyExistException;
 import com.caesarjlee.caesarfinancialtracker.exceptions.categories.CategoryInUseException;
 import com.caesarjlee.caesarfinancialtracker.exceptions.categories.CategoryNotFoundException;
+import com.caesarjlee.caesarfinancialtracker.exceptions.categories.CategoryOrderNotFoundException;
 import com.caesarjlee.caesarfinancialtracker.exceptions.categories.CategoryTypeNotFoundException;
 import com.caesarjlee.caesarfinancialtracker.exceptions.pages.PageSizeException;
 import com.caesarjlee.caesarfinancialtracker.repositories.CategoryRepository;
@@ -42,6 +43,26 @@ public class CategoryService {
                                             entity.getCreatedAt(), entity.getUpdatedAt());
     }
 
+    private CategoryType validType(String type) {
+        CategoryType validType;
+        try {
+            validType = CategoryType.from(type);
+        } catch(Exception e) {
+            throw new CategoryTypeNotFoundException(type);
+        }
+        return validType;
+    }
+
+    private CategoryOrders validOrder(String order) {
+        CategoryOrders validOrder;
+        try {
+            validOrder = CategoryOrders.valueOf(order.toUpperCase());
+        } catch(Exception e) {
+            throw new CategoryOrderNotFoundException(order);
+        }
+        return validOrder;
+    }
+
     public CategoryResponse createCategory(CategoryRequest request) {
         ProfileEntity profile = profileService.getCurrentProfile();
         if(categoryRepository.existsByNameAndTypeAndProfileId(request.name(), request.type(), profile.getId()))
@@ -56,21 +77,16 @@ public class CategoryService {
         return toResponse(entity);
     }
 
-    public Page<CategoryResponse> getCategoriesByTypeAndOrder(String type, CategoryOrders order, int page, int size) {
+    public Page<CategoryResponse> getCategoriesByTypeAndOrder(String type, String order, int page, int size) {
         if(size < 1 || size > 120)
             throw new PageSizeException("page size must be [1, 120]");
-        ProfileEntity profile = profileService.getCurrentProfile();
-        CategoryType  validType;
-        try {
-            validType = CategoryType.from(type);
-        } catch(Exception e) {
-            throw new CategoryTypeNotFoundException(type);
-        }
-        Pageable             pageable = PageRequest.of(page, size, order.getSort());
+        Long                 profileId = profileService.getCurrentProfile().getId();
+        Pageable             pageable  = PageRequest.of(page, size, validOrder(order).getSort());
+        CategoryType         validType = validType(type);
         Page<CategoryEntity> categories =
             validType == CategoryType.ALL
-                ? categoryRepository.findByProfileId(profile.getId(), pageable)
-                : categoryRepository.findByTypeAndProfileId(validType.name(), profile.getId(), pageable);
+                ? categoryRepository.findByProfileId(profileId, pageable)
+                : categoryRepository.findByTypeAndProfileId(validType.name(), profileId, pageable);
         return categories.map(this::toResponse);
     }
 
@@ -103,5 +119,18 @@ public class CategoryService {
 
     public byte [] exportCategories(String type) {
         return exportFiles.exportData(type, new CategoryEntity());
+    }
+
+    public Page<CategoryResponse> searchCategories(String type, String name, String order, int page, int size) {
+        if(size < 1 || size > 120)
+            throw new PageSizeException("page size must be [1, 120]");
+        Long                 profileId = profileService.getCurrentProfile().getId();
+        Pageable             pageable  = PageRequest.of(page, size, validOrder(order).getSort());
+        CategoryType         validType = validType(type);
+        Page<CategoryEntity> categories =
+            validType == CategoryType.ALL
+                ? categoryRepository.findByProfileIdAndName(profileId, name, pageable)
+                : categoryRepository.findByProfileIdAndTypeAndName(profileId, validType.name(), name, pageable);
+        return categories.map(this::toResponse);
     }
 }

@@ -9,5 +9,6 @@ export const API_ENDPOINTS = {
     UPDATE_CATEGORY: "/categories/{id}",
     DELETE_CATEGORY: "/categories/{id}",
     CATEGORY_IMPORT: "/categories/import",
-    CATEGORY_EXPORT: "/categories/export/{type}"
+    CATEGORY_EXPORT: "/categories/export/{type}",
+    CATEGORY_SEARCH: "/categories/search"
 };
