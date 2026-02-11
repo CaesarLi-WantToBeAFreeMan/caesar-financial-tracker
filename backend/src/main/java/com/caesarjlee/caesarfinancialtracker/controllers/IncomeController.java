@@ -66,7 +66,7 @@ public class IncomeController {
     @GetMapping("/export/{type}")
     public ResponseEntity<byte []> export(@PathVariable String type) {
         return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=categories." + type)
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=incomes." + type)
             .body(incomeService.export(type));
     }
 }
