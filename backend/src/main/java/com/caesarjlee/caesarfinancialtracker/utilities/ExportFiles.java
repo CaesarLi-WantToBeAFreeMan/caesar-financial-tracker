@@ -57,6 +57,7 @@ public class ExportFiles {
             outputStreamWriter.flush();
             return byteArrayOutputStream.toByteArray();
         } catch(Exception e) {
+            e.printStackTrace();
             throw new ExportFileException();
         }
     }

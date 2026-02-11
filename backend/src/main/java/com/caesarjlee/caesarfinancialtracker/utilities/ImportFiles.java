@@ -1,51 +1,29 @@
 package com.caesarjlee.caesarfinancialtracker.utilities;
 
-import com.caesarjlee.caesarfinancialtracker.dtos.ExpenseResponse;
-import com.caesarjlee.caesarfinancialtracker.dtos.ImportResponse;
-import com.caesarjlee.caesarfinancialtracker.entities.CategoryEntity;
-import com.caesarjlee.caesarfinancialtracker.entities.ExpenseEntity;
-import com.caesarjlee.caesarfinancialtracker.entities.IncomeEntity;
-import com.caesarjlee.caesarfinancialtracker.entities.ProfileEntity;
+import com.caesarjlee.caesarfinancialtracker.dtos.*;
+import com.caesarjlee.caesarfinancialtracker.entities.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.categories.*;
-import com.caesarjlee.caesarfinancialtracker.exceptions.expenses.ExpenseNameEmptyException;
+import com.caesarjlee.caesarfinancialtracker.exceptions.dates.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.files.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.files.entities.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.files.filetypes.*;
-import com.caesarjlee.caesarfinancialtracker.exceptions.incomes.IncomeNameEmptyException;
-import com.caesarjlee.caesarfinancialtracker.repositories.CategoryRepository;
-import com.caesarjlee.caesarfinancialtracker.repositories.ExpenseRepository;
-import com.caesarjlee.caesarfinancialtracker.repositories.IncomeRepository;
+import com.caesarjlee.caesarfinancialtracker.exceptions.records.*;
+import com.caesarjlee.caesarfinancialtracker.repositories.*;
 import com.caesarjlee.caesarfinancialtracker.services.ProfileService;
 
-import com.opencsv.CSVParserBuilder;
-import com.opencsv.CSVReader;
-import com.opencsv.CSVReaderBuilder;
+import com.opencsv.*;
 
 import org.apache.poi.EmptyFileException;
-import org.apache.poi.ss.usermodel.DataFormatter;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.usermodel.WorkbookFactory;
-import org.apache.tomcat.util.http.fileupload.InvalidFileNameException;
+import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import ch.qos.logback.core.model.conditional.ElseModel;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.time.format.*;
+import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import tools.jackson.core.type.TypeReference;
@@ -61,36 +39,20 @@ public class ImportFiles {
     private final ObjectMapper       objectMapper;
     private final ProfileService     profileService;
 
-    private static final Set<String> CATEGORY_COLUMNS = Set.of("name", "type", "icon");
-    private static final Set<String> RECORD_COLUMNS =
-        Set.of("name", "date", "price", "category", "icon", "description");
-    private static final Set<String> ALLOWED_CATEGORY_TYPES = Set.of("income", "expense");
-
-    private final List<DateTimeFormatter> FORMATTERS        = List.of(
-        // numeric day-month-year
-        DateTimeFormatter.ofPattern("d-M-uuuu"), DateTimeFormatter.ofPattern("d/M/uuuu"),
-
-        // numeric month-day-year
+    private final List<DateTimeFormatter> FORMATTERS = List.of(
+        // numeric patterns
         DateTimeFormatter.ofPattern("M-d-uuuu"), DateTimeFormatter.ofPattern("M/d/uuuu"),
-
-        // numeric year-month-day
         DateTimeFormatter.ofPattern("uuuu-M-d"), DateTimeFormatter.ofPattern("uuuu/M/d"),
 
-        // short month name
-        DateTimeFormatter.ofPattern("d-MMM-uuuu", Locale.ENGLISH),
-        DateTimeFormatter.ofPattern("MMM-d-uuuu", Locale.ENGLISH),
-        DateTimeFormatter.ofPattern("uuuu-MMM-d", Locale.ENGLISH),
-        DateTimeFormatter.ofPattern("d/MMM/uuuu", Locale.ENGLISH),
-        DateTimeFormatter.ofPattern("MMM/d/uuuu", Locale.ENGLISH),
-        DateTimeFormatter.ofPattern("uuuu/MMM/d", Locale.ENGLISH),
-
-        // full month name
-        DateTimeFormatter.ofPattern("d-MMMM-uuuu", Locale.ENGLISH),
-        DateTimeFormatter.ofPattern("MMMM-d-uuuu", Locale.ENGLISH),
-        DateTimeFormatter.ofPattern("uuuu-MMMM-d", Locale.ENGLISH),
-        DateTimeFormatter.ofPattern("d/MMMM/uuuu", Locale.ENGLISH),
-        DateTimeFormatter.ofPattern("MMMM/d/uuuu", Locale.ENGLISH),
-        DateTimeFormatter.ofPattern("uuuu/MMMM/d", Locale.ENGLISH));
+        // case-insensitive month name patterns
+        new DateTimeFormatterBuilder().parseCaseInsensitive().appendPattern("MMM-d-uuuu").toFormatter(Locale.ENGLISH),
+        new DateTimeFormatterBuilder().parseCaseInsensitive().appendPattern("MMM/d/uuuu").toFormatter(Locale.ENGLISH),
+        new DateTimeFormatterBuilder().parseCaseInsensitive().appendPattern("uuuu-MMM-d").toFormatter(Locale.ENGLISH),
+        new DateTimeFormatterBuilder().parseCaseInsensitive().appendPattern("uuuu/MMM/d").toFormatter(Locale.ENGLISH),
+        new DateTimeFormatterBuilder().parseCaseInsensitive().appendPattern("MMMM-d-uuuu").toFormatter(Locale.ENGLISH),
+        new DateTimeFormatterBuilder().parseCaseInsensitive().appendPattern("MMMM/d/uuuu").toFormatter(Locale.ENGLISH),
+        new DateTimeFormatterBuilder().parseCaseInsensitive().appendPattern("uuuu-MMMM-d").toFormatter(Locale.ENGLISH),
+        new DateTimeFormatterBuilder().parseCaseInsensitive().appendPattern("uuuu/MMMM/d").toFormatter(Locale.ENGLISH));
 
     private List<String []> readCsv(MultipartFile file, char separator) {
         try(Reader reader = new InputStreamReader(file.getInputStream())) {
@@ -110,9 +72,7 @@ public class ImportFiles {
             DataFormatter   formatter = new DataFormatter();
             List<String []> data      = new ArrayList<>();
             for(Row row : sheet) {
-                int size = row.getLastCellNum();
-                if(size <= 0)
-                    continue;
+                int       size = Math.max(0, row.getLastCellNum());
                 String [] line = new String [size];
                 for(int i = 0; i < size; i++)
                     line [i] = formatter.formatCellValue(row.getCell(i));
@@ -131,13 +91,11 @@ public class ImportFiles {
                 throw new EmptyFileException();
             List<String>    headers = new ArrayList<>(raw.get(0).keySet());
             List<String []> table   = new ArrayList<>();
-            table.add(headers.toArray(new String [0]));
+            table.add(headers.toArray(String [] ::new));
             for(Map<String, Object> row : raw) {
                 String [] line = new String [headers.size()];
-                for(int i = 0; i < headers.size(); i++) {
-                    Object value = row.get(headers.get(i));
-                    line [i]     = value == null ? null : value.toString();
-                }
+                for(int i = 0; i < headers.size(); i++)
+                    line [i] = Objects.toString(row.get(headers.get(i)), null);
                 table.add(line);
             }
             return table;
@@ -169,11 +127,29 @@ public class ImportFiles {
     }
 
     private LocalDate parseDate(String date) {
+        LocalDate dateObject = null;
         for(DateTimeFormatter formatter : FORMATTERS)
             try {
-                return LocalDate.parse(date, formatter);
-            } catch(Exception e) {}
-        throw new InvalidRequiredColumnException("date");
+                dateObject = LocalDate.parse(date, formatter);
+                break;
+            } catch(Exception ignore) {}
+        if(dateObject == null)
+            throw new InvalidDateFormatException();
+        if(dateObject.isAfter(LocalDate.now()))
+            throw new InvalidRecordDateException(date + " must be <= " + LocalDate.now().toString());
+        return dateObject;
+    }
+
+    private BigDecimal parsePrice(String price) {
+        BigDecimal priceObject = null;
+        try {
+            priceObject = new BigDecimal(price);
+        } catch(Exception e) {
+            throw new InvalidRecordPriceException(price + " must be a number");
+        }
+        if(priceObject.compareTo(BigDecimal.ZERO) < 0)
+            throw new InvalidRecordPriceException(price + " must be >= 0");
+        return priceObject;
     }
 
     private ImportResponse handleImport(List<String []> table, Object entity) {
@@ -182,153 +158,139 @@ public class ImportFiles {
         ImportResponse response = new ImportResponse();
         String []      headers  = normalizeHeaders(table.get(0));
         ProfileEntity  profile  = profileService.getCurrentProfile();
+
         if(entity instanceof CategoryEntity) {
-            importCategories(table, headers, profile, response);
-        } else if(entity instanceof IncomeEntity) {
-            importIncomes(table, headers, profile, response);
-        } else if(entity instanceof ExpenseEntity) {
-            importExpenses(table, headers, profile, response);
-        } else {
-            throw new InvalidEntityException(entity.getClass().getSimpleName());
-        }
-        return response;
-    }
-
-    private void importCategories(List<String []> table, String [] headers, ProfileEntity profile,
-                                  ImportResponse response) {
-        validateHeaders(headers, CATEGORY_COLUMNS, List.of("name", "type"));
-        Set<String> existing = categoryRepository.findByProfileId(profile.getId())
-                                   .stream()
-                                   .map(category -> category.getName().toLowerCase())
-                                   .collect(Collectors.toSet());
-        for(int i = 1; i < table.size(); i++) {
-            try {
-                CategoryEntity category = parseCategory(headers, table.get(i), profile);
-                String         key      = category.getName().toLowerCase();
-                if(existing.contains(key)) {
-                    response.fail("duplicate at row #" + (i + 1));
+            validateHeaders(headers, Set.of("name", "type", "icon"), List.of("name", "type"));
+            Set<String> existingKeys = categoryRepository.findByProfileId(profile.getId())
+                                           .stream()
+                                           .map(category -> category.getName().trim() + ":" + category.getType())
+                                           .collect(Collectors.toSet());
+            int index = 1;
+            for(var row : table) {
+                if(row == table.get(0))
                     continue;
+                index++;
+                try {
+                    String name = null, type = null, icon = null;
+                    for(int i = 0; i < headers.length; i++) {
+                        String value = getCell(row, i);
+                        switch(headers [i]) {
+                        case "name" -> name = value;
+                        case "type" -> type = value;
+                        case "icon" -> icon = value;
+                        }
+                    }
+                    if(name == null || name.isBlank())
+                        throw new CategoryNameEmptyException();
+                    if(type == null || type.isBlank())
+                        throw new CategoryTypeEmptyException();
+                    String validType = type.trim().toLowerCase();
+                    if(!Set.of("income", "expense").contains(validType))
+                        throw new InvalidCategoryTypeException(validType);
+                    String currentKey = name.trim() + ":" + validType;
+                    if(existingKeys.contains(currentKey)) {
+                        response.fail("duplicate category at row #" + index);
+                        continue;
+                    }
+                    categoryRepository.save(
+                        CategoryEntity.builder().name(name.trim()).type(validType).icon(icon).profile(profile).build());
+                    existingKeys.add(currentKey);
+                    response.success();
+                } catch(CategoryNameEmptyException e) {
+                    response.fail("empty name at row #" + index);
+                } catch(CategoryTypeEmptyException e) {
+                    response.fail("empty type at row #" + index);
+                } catch(InvalidCategoryTypeException e) {
+                    response.fail("invalid type (only income/expense) at row #" + index);
+                } catch(Exception e) {
+                    response.fail("invalid data at row #" + index);
                 }
-                existing.add(key);
-                categoryRepository.save(category);
-                response.success();
-            } catch(Exception e) {
-                response.fail("invalid row #" + (i + 1));
             }
-        }
-    }
-
-    private void importIncomes(List<String []> table, String [] headers, ProfileEntity profile,
-                               ImportResponse response) {
-        validateHeaders(headers, RECORD_COLUMNS, List.of("name", "date", "price", "category"));
-        Map<String, CategoryEntity> categories =
-            categoryRepository.findByProfileId(profile.getId())
-                .stream()
-                .filter(category -> category.getType().equalsIgnoreCase("income"))
-                .collect(Collectors.toMap(category -> category.getName().toLowerCase(), category -> category));
-        for(int i = 1; i < table.size(); i++) {
-            try {
-                incomeRepository.save(parseIncome(headers, table.get(i), profile, categories));
-                response.success();
-            } catch(Exception e) {
-                response.fail("invalid row #" + (i + 1));
+        } else if(entity instanceof IncomeEntity || entity instanceof ExpenseEntity) {
+            validateHeaders(headers, Set.of("name", "date", "price", "category", "icon", "description"),
+                            List.of("name", "date", "price", "category"));
+            String                      type = entity instanceof IncomeEntity ? "income" : "expense";
+            Map<String, CategoryEntity> categories =
+                categoryRepository.findByProfileId(profile.getId())
+                    .stream()
+                    .filter(category -> category.getType().equalsIgnoreCase(type))
+                    .collect(Collectors.toMap(category -> category.getName(), category -> category));
+            int index = 1;
+            for(var row : table) {
+                if(row == table.get(0))
+                    continue;
+                index++;
+                try {
+                    String name = null, date = null, price = null, icon = null, description = null, category = null;
+                    for(int i = 0; i < headers.length; i++) {
+                        String value = getCell(row, i);
+                        switch(headers [i]) {
+                        case "name"        -> name = value;
+                        case "date"        -> date = value;
+                        case "price"       -> price = value;
+                        case "icon"        -> icon = value;
+                        case "description" -> description = value;
+                        case "category"    -> category = value;
+                        }
+                    }
+                    if(category == null || category.trim().isBlank())
+                        throw new CategoryNameEmptyException();
+                    CategoryEntity categoryEntity = categories.get(category.trim());
+                    if(categoryEntity == null)
+                        throw new CategoryNotFoundException(category);
+                    if(name == null || name.isBlank())
+                        throw new RecordNameEmptyException();
+                    if(date == null || date.isBlank())
+                        throw new RecordDateEmptyException();
+                    if(price == null || price.isBlank())
+                        throw new RecordPriceEmptyException();
+                    if(description == null || description.trim().isBlank())
+                        description = name;
+                    if(type == "income") {
+                        incomeRepository.save(IncomeEntity.builder()
+                                                  .name(name)
+                                                  .date(parseDate(date))
+                                                  .price(parsePrice(price))
+                                                  .icon(icon)
+                                                  .description(description)
+                                                  .category(categoryEntity)
+                                                  .profile(profile)
+                                                  .build());
+                    } else {
+                        expenseRepository.save(ExpenseEntity.builder()
+                                                   .name(name)
+                                                   .date(parseDate(date))
+                                                   .price(new BigDecimal(price))
+                                                   .icon(icon)
+                                                   .description(description)
+                                                   .category(categoryEntity)
+                                                   .profile(profile)
+                                                   .build());
+                    }
+                    response.success();
+                } catch(CategoryNameEmptyException e) {
+                    response.fail("empty category name at row #" + index);
+                } catch(CategoryNotFoundException e) {
+                    response.fail("category doesn't exist at row #" + index);
+                } catch(RecordNameEmptyException e) {
+                    response.fail("empty name at row #" + index);
+                } catch(RecordDateEmptyException e) {
+                    response.fail("empty date at row #" + index);
+                } catch(RecordPriceEmptyException e) {
+                    response.fail("empty price at row #" + index);
+                } catch(InvalidDateFormatException e) {
+                    response.fail("invalid date format at row #" + index);
+                } catch(InvalidRecordDateException e) {
+                    response.fail("invalid date (<= today) at row #" + index);
+                } catch(InvalidRecordPriceException e) {
+                    response.fail("invalid price (>= 0) at row #" + index);
+                } catch(Exception e) {
+                    response.fail("invalid data at row #" + index);
+                }
             }
-        }
-    }
-
-    private void importExpenses(List<String []> table, String [] headers, ProfileEntity profile,
-                                ImportResponse response) {
-        validateHeaders(headers, RECORD_COLUMNS, List.of("name", "date", "price", "category"));
-        Map<String, CategoryEntity> categories =
-            categoryRepository.findByProfileId(profile.getId())
-                .stream()
-                .filter(category -> category.getType().equalsIgnoreCase("expense"))
-                .collect(Collectors.toMap(category -> category.getName().toLowerCase(), category -> category));
-        for(int i = 1; i < table.size(); i++) {
-            try {
-                expenseRepository.save(parseExpense(headers, table.get(i), profile, categories));
-                response.success();
-            } catch(Exception e) {
-                response.fail("invalid row #" + (i + 1));
-            }
-        }
-    }
-
-    private CategoryEntity parseCategory(String [] header, String [] require, ProfileEntity profile) {
-        String name = null, type = null, icon = null;
-        for(int i = 0; i < header.length; i++) {
-            String value = getCell(require, i);
-            switch(header [i]) {
-            case "name" -> name = value;
-            case "type" -> type = value;
-            case "icon" -> icon = value;
-            }
-        }
-        if(name == null || name.isBlank())
-            throw new CategoryNameEmptyException();
-        if(type == null || !ALLOWED_CATEGORY_TYPES.contains(type.toUpperCase()))
-            throw new InvalidCategoryTypeException(type);
-        return CategoryEntity.builder().name(name.trim()).type(type.toLowerCase()).icon(icon).profile(profile).build();
-    }
-
-    private IncomeEntity parseIncome(String [] header, String [] require, ProfileEntity profile,
-                                     Map<String, CategoryEntity> categories) {
-        String name = null, date = null, price = null, icon = null, description = null, category = null;
-        for(int i = 0; i < header.length; i++) {
-            String value = getCell(require, i);
-            switch(header [i]) {
-            case "name"        -> name = value;
-            case "date"        -> date = value;
-            case "price"       -> price = value;
-            case "icon"        -> icon = value;
-            case "description" -> description = value;
-            case "category"    -> category = value;
-            }
-        }
-        CategoryEntity categoryEntity = categories.get(category.toLowerCase());
-        if(category == null)
-            throw new CategoryNotFoundException(category);
-        if(name == null || name.isBlank())
-            throw new IncomeNameEmptyException();
-        return IncomeEntity.builder()
-            .name(name)
-            .date(parseDate(date))
-            .price(new BigDecimal(price))
-            .icon(icon)
-            .description(description)
-            .category(categoryEntity)
-            .profile(profile)
-            .build();
-    }
-
-    private ExpenseEntity parseExpense(String [] header, String [] require, ProfileEntity profile,
-                                       Map<String, CategoryEntity> categories) {
-        String name = null, date = null, price = null, icon = null, description = null, category = null;
-        for(int i = 0; i < header.length; i++) {
-            String value = getCell(require, i);
-            switch(header [i]) {
-            case "name"        -> name = value;
-            case "date"        -> date = value;
-            case "price"       -> price = value;
-            case "icon"        -> icon = value;
-            case "description" -> description = value;
-            case "category"    -> category = value;
-            }
-        }
-        CategoryEntity categoryEntity = categories.get(category.toLowerCase());
-        if(category == null)
-            throw new CategoryNotFoundException(category);
-        if(name == null || name.isBlank())
-            throw new ExpenseNameEmptyException();
-        return ExpenseEntity.builder()
-            .name(name)
-            .date(parseDate(date))
-            .price(new BigDecimal(price))
-            .icon(icon)
-            .description(description)
-            .category(categoryEntity)
-            .profile(profile)
-            .build();
+        } else
+            throw new InvalidEntityException(entity.getClass().getSimpleName());
+        return response;
     }
 
     public ImportResponse importData(MultipartFile file, Object entity) {

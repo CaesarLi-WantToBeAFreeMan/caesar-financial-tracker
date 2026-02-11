@@ -1,28 +1,15 @@
 package com.caesarjlee.caesarfinancialtracker.services;
 
-import com.caesarjlee.caesarfinancialtracker.dtos.ExpenseRequest;
-import com.caesarjlee.caesarfinancialtracker.dtos.ExpenseResponse;
-import com.caesarjlee.caesarfinancialtracker.dtos.ImportResponse;
-import com.caesarjlee.caesarfinancialtracker.entities.CategoryEntity;
-import com.caesarjlee.caesarfinancialtracker.entities.ExpenseEntity;
-import com.caesarjlee.caesarfinancialtracker.entities.ProfileEntity;
-import com.caesarjlee.caesarfinancialtracker.enumerations.CategoryType;
-import com.caesarjlee.caesarfinancialtracker.enumerations.RecordOrders;
+import com.caesarjlee.caesarfinancialtracker.dtos.*;
+import com.caesarjlee.caesarfinancialtracker.entities.*;
+import com.caesarjlee.caesarfinancialtracker.enumerations.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.categories.CategoryNotFoundException;
-import com.caesarjlee.caesarfinancialtracker.exceptions.expenses.ExpenseDateException;
-import com.caesarjlee.caesarfinancialtracker.exceptions.expenses.ExpenseNotFoundException;
-import com.caesarjlee.caesarfinancialtracker.exceptions.expenses.ExpenseOrderNotFoundException;
-import com.caesarjlee.caesarfinancialtracker.exceptions.expenses.ExpensePriceException;
+import com.caesarjlee.caesarfinancialtracker.exceptions.expenses.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.pages.PageSizeException;
-import com.caesarjlee.caesarfinancialtracker.repositories.CategoryRepository;
-import com.caesarjlee.caesarfinancialtracker.repositories.ExpenseRepository;
-import com.caesarjlee.caesarfinancialtracker.utilities.ExportFiles;
-import com.caesarjlee.caesarfinancialtracker.utilities.ImportFiles;
+import com.caesarjlee.caesarfinancialtracker.repositories.*;
+import com.caesarjlee.caesarfinancialtracker.utilities.*;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -65,16 +52,16 @@ public class ExpenseService {
     private void validate(LocalDate start, LocalDate end, BigDecimal low, BigDecimal high) {
         // dates
         if(end != null && end.isAfter(LocalDate.now()))
-            throw new ExpenseDateException(end.toString() + " must be <= " + LocalDate.now().toString());
+            throw new InvalidExpenseDateException(end.toString() + " must be <= " + LocalDate.now().toString());
         if(start != null && end != null && start.isAfter(end))
-            throw new ExpenseDateException(start.toString() + " must be <= " + end.toString());
+            throw new InvalidExpenseDateException(start.toString() + " must be <= " + end.toString());
         // prices
         if(low != null && low.compareTo(BigDecimal.ZERO) < 0)
-            throw new ExpensePriceException(low.toString() + " must be >= 0");
+            throw new InvalidExpensePriceException(low.toString() + " must be >= 0");
         if(high != null && high.compareTo(BigDecimal.ZERO) < 0)
-            throw new ExpensePriceException(high.toString() + " must be >= 0");
+            throw new InvalidExpensePriceException(high.toString() + " must be >= 0");
         if(low != null && high != null && low.compareTo(high) > 0)
-            throw new ExpensePriceException(low.toString() + " must be <= " + high.toString());
+            throw new InvalidExpensePriceException(low.toString() + " must be <= " + high.toString());
     }
 
     public ExpenseResponse create(ExpenseRequest request) {
