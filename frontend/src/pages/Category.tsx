@@ -26,10 +26,6 @@ export default function Category() {
 
     //search
     const [keyword, setKeyword] = useState("");
-    const triggerSearch = () => {
-        categories.setPage(0);
-        fetchCategories();
-    };
 
     //export
     const [openExportMenu, setOpenExportMenu] = useState(false);
@@ -38,27 +34,35 @@ export default function Category() {
 
     //modals
     const [openImportModal, setOpenImportModal] = useState(false);
-    const [openAddCategoryModal, setOpenAddCategoryModal] = useState(false);
-    const [openEditCategoryModal, setOpenEditCategoryModal] = useState(false);
-    const [openDeleteCategoryModal, setOpenDeleteCategoryModal] = useState(false);
+    const [openCreateModal, setOpenCreateModal] = useState(false);
+    const [openUpdateModal, setOpenUpdateModal] = useState(false);
+    const [openDeleteModal, setOpenDeleteModal] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<CategoryData | null>(null);
 
-    const fetchCategories = async () => {
-        setLoading(true);
-        const isSearching = keyword.trim().length > 0;
+    //apis
+    const createCategory = async (category: CategoryData) => {
+        setOpenCreateModal(false);
         try {
-            const response = await axiosConfig.get(
-                isSearching ? API_ENDPOINTS.CATEGORY_SEARCH : API_ENDPOINTS.GET_CATEGORIES,
-                {
-                    params: {
-                        type: categories.type,
-                        name: isSearching ? keyword.trim() : undefined,
-                        order: categories.order,
-                        page: categories.page,
-                        size: categories.size
-                    }
+            await axiosConfig.post(API_ENDPOINTS.CREATE_CATEGORY, category);
+            toast.success("Category Created");
+            readCategories();
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Created failed");
+        }
+    };
+
+    const readCategories = async () => {
+        setLoading(true);
+        try {
+            const response = await axiosConfig.get(API_ENDPOINTS.READ_CATEGORIES, {
+                params: {
+                    type: categories.type,
+                    name: keyword.trim() || undefined,
+                    order: categories.order,
+                    page: categories.page,
+                    size: categories.size
                 }
-            );
+            });
             setPage({
                 content: response.data.content,
                 totalElements: response.data.total_elements,
@@ -75,43 +79,28 @@ export default function Category() {
         }
     };
 
-    const addCategory = async (category: CategoryData) => {
-        setOpenAddCategoryModal(false);
-        try {
-            await axiosConfig.post(API_ENDPOINTS.ADD_CATEGORY, category);
-            toast.success("Created successfully");
-            fetchCategories();
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || "Created failed");
-        }
-    };
-
-    const changeCategory = async (category: CategoryData) => {
+    const updateCategory = async (category: CategoryData) => {
         if (!category.id) return;
         try {
             await axiosConfig.put(API_ENDPOINTS.UPDATE_CATEGORY.replace("{id}", String(category.id)), category);
             toast.success("Updated successfully");
-            fetchCategories();
+            readCategories();
         } catch (error: any) {
-            toast.error(error?.response?.data?.message || "Updated failed");
+            toast.error(error?.response?.data?.message || "Update failed");
         } finally {
-            setOpenEditCategoryModal(false);
+            setOpenUpdateModal(false);
         }
     };
 
     const deleteCategory = async (id: number) => {
-        if (!id) {
-            toast.error("Invalid category ID");
-            return;
-        }
         try {
             await axiosConfig.delete(API_ENDPOINTS.DELETE_CATEGORY.replace("{id}", String(id)));
-            toast.success("Deleted successfully");
-            fetchCategories();
+            toast.success("Category deleted");
+            readCategories();
         } catch (error: any) {
             toast.error(error?.response?.data?.message || "Deleted failed");
         } finally {
-            setOpenDeleteCategoryModal(false);
+            setOpenDeleteModal(false);
         }
     };
 
@@ -119,7 +108,7 @@ export default function Category() {
         setExporting(true);
         setOpenExportMenu(false);
         try {
-            const response = await axiosConfig.get(API_ENDPOINTS.CATEGORY_EXPORT.replace("{type}", type), {
+            const response = await axiosConfig.get(API_ENDPOINTS.EXPORT_CATEGORIES.replace("{type}", type), {
                 responseType: "blob"
             });
             const blob = new Blob([response.data]);
@@ -140,7 +129,7 @@ export default function Category() {
     };
 
     useEffect(() => {
-        fetchCategories();
+        readCategories();
     }, [categories.type, categories.order, categories.page, categories.size, keyword]);
 
     useEffect(() => {
@@ -198,7 +187,7 @@ export default function Category() {
                             )}
                         </div>
                         <button
-                            onClick={() => setOpenAddCategoryModal(true)}
+                            onClick={() => setOpenCreateModal(true)}
                             className="flex items-center justify-center gap-3 rounded-lg p-3 bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 hover:shadow-[0_0_15px_rgba(34,211,238,0.6)] hover:cursor-pointer"
                         >
                             <Plus size={18} /> Add
@@ -259,13 +248,13 @@ export default function Category() {
                                     const category = page?.content.find((c: CategoryData) => c.id === id);
                                     if (!category) return;
                                     setSelectedCategory(category);
-                                    setOpenEditCategoryModal(true);
+                                    setOpenUpdateModal(true);
                                 }}
                                 onDeleteCategory={(id: number) => {
                                     const category = page?.content.find((c: CategoryData) => c.id === id);
                                     if (!category) return;
                                     setSelectedCategory(category);
-                                    setOpenDeleteCategoryModal(true);
+                                    setOpenDeleteModal(true);
                                 }}
                             />
                             <Pagination page={page.number} totalPages={page.totalPages} onChange={categories.setPage} />
@@ -273,42 +262,30 @@ export default function Category() {
                     )
                 )}
 
-                <Modal
-                    isOpen={openAddCategoryModal}
-                    onClose={() => setOpenAddCategoryModal(false)}
-                    title="Add Category"
-                >
-                    <AddCategoryForm onAddCategory={addCategory} />
+                <Modal isOpen={openCreateModal} onClose={() => setOpenCreateModal(false)} title="Add Category">
+                    <AddCategoryForm onAddCategory={createCategory} />
                 </Modal>
 
                 <Modal isOpen={openImportModal} onClose={() => setOpenImportModal(false)} title="Import Categories">
                     <CategoryImportModal
                         onClose={() => {
                             setOpenImportModal(false);
-                            fetchCategories();
+                            readCategories();
                         }}
                     />
                 </Modal>
 
                 {selectedCategory && (
-                    <Modal
-                        isOpen={openEditCategoryModal}
-                        onClose={() => setOpenEditCategoryModal(false)}
-                        title="Update Category"
-                    >
-                        <EditCategoryForm category={selectedCategory} onUpdateCategory={changeCategory} />
+                    <Modal isOpen={openUpdateModal} onClose={() => setOpenUpdateModal(false)} title="Update Category">
+                        <EditCategoryForm category={selectedCategory} onUpdateCategory={updateCategory} />
                     </Modal>
                 )}
 
                 {selectedCategory && (
-                    <Modal
-                        isOpen={openDeleteCategoryModal}
-                        onClose={() => setOpenDeleteCategoryModal(false)}
-                        title="Delete Category"
-                    >
+                    <Modal isOpen={openDeleteModal} onClose={() => setOpenDeleteModal(false)} title="Delete Category">
                         <DeleteCategoryConfirm
                             category={selectedCategory}
-                            onCancel={() => setOpenDeleteCategoryModal(false)}
+                            onCancel={() => setOpenDeleteModal(false)}
                             onConfirm={deleteCategory}
                         />
                     </Modal>

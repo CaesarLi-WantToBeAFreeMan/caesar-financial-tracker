@@ -55,7 +55,7 @@ export default function CategoryImportModal({onClose}: Props) {
         formData.append("file", file);
         setLoading(true);
         try {
-            const response = await axiosConfig.post<ImportResponse>(API_ENDPOINTS.CATEGORY_IMPORT, formData, {
+            const response = await axiosConfig.post<ImportResponse>(API_ENDPOINTS.IMPORT_CATEGORIES, formData, {
                 headers: {"Content-Type": "multipart/form-data"}
             });
             setResult(response.data);
