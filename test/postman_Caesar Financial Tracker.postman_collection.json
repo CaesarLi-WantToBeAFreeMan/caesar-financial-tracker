@@ -1,0 +1,896 @@
+{
+  "info": {
+    "_postman_id": "9e03a86f-3854-443e-a43e-1b54f9bb53a6",
+    "name": "Caesar Financial Tracker",
+    "description": "API tests for `Caesar Financial Tracker`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "41290158"
+  },
+  "item": [
+    {
+      "name": "authentication",
+      "item": [
+        {
+          "name": "register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Successful POST request\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"first_name\": \"Caesar\",\n    \"last_name\": \"LEE\",\n    \"email\": \"text@example.com\",\n    \"password\": \"FuckCCP@8964\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{profile}}/register",
+              "host": [
+                "{{profile}}"
+              ],
+              "path": [
+                "register"
+              ]
+            },
+            "description": "This is a POST request, submitting data to an API via the request body. This request submits JSON data, and the data is reflected in the response.\n\nA successful POST request typically returns a `200 OK` or `201 Created` response code."
+          },
+          "response": []
+        },
+        {
+          "name": "login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.globals.set(\"token\", pm.response.json().token);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"krbw0110010000@gmail.com\",\r\n    \"password\": \"FuckCCP@8964\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{profile}}/login",
+              "host": [
+                "{{profile}}"
+              ],
+              "path": [
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "read",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{profile}}",
+              "host": [
+                "{{profile}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "category",
+      "item": [
+        {
+          "name": "create",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\": \"test\",\r\n    \"type\": \"expense\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{category}}",
+              "host": [
+                "{{category}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "read",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "type",
+                  "value": "income",
+                  "description": "null (all types)/income/expense",
+                  "type": "text",
+                  "uuid": "2ee8f59f-7875-43e5-ae12-f2c6c8a241df"
+                },
+                {
+                  "key": "name",
+                  "value": "sa",
+                  "description": "keyword of names",
+                  "type": "text",
+                  "uuid": "ba6617fe-402c-4ac9-b07e-0c99df937b7a"
+                },
+                {
+                  "key": "order",
+                  "value": "NAME_ASCENDING",
+                  "description": "NAME_ASCENDING/NAME_DESCENDING/CREATED_ASCENDING/CREATED_DESCENDING/UPDATED_ASCENDING/UPDATED_DESCENDING",
+                  "type": "text",
+                  "uuid": "535ea3e3-fb04-44cc-8cd4-d5e40551aa19"
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "index of page",
+                  "type": "text",
+                  "uuid": "93182981-214e-4994-98e1-e9615ceb6ba5"
+                },
+                {
+                  "key": "size",
+                  "value": "3",
+                  "description": "page size in range [1, 120]",
+                  "type": "text",
+                  "uuid": "dd2f8796-551c-40bb-945f-1ac615d18c02"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{category}}",
+              "host": [
+                "{{category}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "update",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\": \"text2\",\r\n    \"type\": \"income\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{category}}/67",
+              "host": [
+                "{{category}}"
+              ],
+              "path": [
+                "67"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "delete",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{category}}/45",
+              "host": [
+                "{{category}}"
+              ],
+              "path": [
+                "45"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "import",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "description": "csv/tsv/excel/json file that carries name, type and icon (optional) columns",
+                  "type": "file",
+                  "uuid": "2db17748-ca96-4f57-99bf-0f8f1c4300e5",
+                  "value": null
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{category}}/import",
+              "host": [
+                "{{category}}"
+              ],
+              "path": [
+                "import"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "export",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{category}}/export/csv",
+              "host": [
+                "{{category}}"
+              ],
+              "path": [
+                "export",
+                "csv"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "income",
+      "item": [
+        {
+          "name": "create",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\": \"company bonus\",\r\n    \"category_id\": 2\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{income}}",
+              "host": [
+                "{{income}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "read",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "order",
+                  "value": "NAME_ASCENDING",
+                  "description": "filter order: NAME_ASCENDING/NAME_DESCENDING/DATE_ASCENDING/DATE_DESCENDING/PRICE_ASCENDING/PRICE_DESCENDING//CREATED_ASCENDING/CREATED_DESCENDING/UPDATED_ASCENDING/UPDATED_DESCENDING",
+                  "type": "text",
+                  "uuid": "1a62891c-498d-45ea-a354-f0f9b88c38d5"
+                },
+                {
+                  "key": "keyword",
+                  "value": "caesar",
+                  "description": "keyword of name",
+                  "type": "text",
+                  "uuid": "e8a10336-b7ad-481b-beef-8ac77404cb0e",
+                  "disabled": true
+                },
+                {
+                  "key": "categoryId",
+                  "value": "14",
+                  "description": "id of category",
+                  "type": "text",
+                  "uuid": "d500a7a0-22c4-4946-bfe5-065b90b4ef90"
+                },
+                {
+                  "key": "dateStart",
+                  "value": "2025-01-01",
+                  "description": "start filtered date",
+                  "type": "text",
+                  "uuid": "6079ec49-6ba3-4c7f-9659-5b3c1b2b51a8"
+                },
+                {
+                  "key": "dateEnd",
+                  "value": "2025-06-30",
+                  "description": "end filtered date",
+                  "type": "text",
+                  "uuid": "1de27734-35df-4e57-b607-694841f07e64"
+                },
+                {
+                  "key": "priceLow",
+                  "value": "0",
+                  "description": "low filtered price",
+                  "type": "text",
+                  "uuid": "085c0543-0285-4ddd-bc75-a556a6325e32"
+                },
+                {
+                  "key": "priceHigh",
+                  "value": "99.99",
+                  "description": "high filtered price",
+                  "type": "text",
+                  "uuid": "2abeb704-5d67-491e-8c4d-2a825b9ac41f"
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "index of page",
+                  "type": "text",
+                  "uuid": "f703292e-9d7a-4a7d-a333-d67209d0d097"
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "page size in range [1, 120]",
+                  "type": "text",
+                  "uuid": "fb170570-aebc-484e-ba67-1ded0ec67c61"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{income}}",
+              "host": [
+                "{{income}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\": \"cft's company bonus\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{income}}/22",
+              "host": [
+                "{{income}}"
+              ],
+              "path": [
+                "22"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "delete",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{income}}/21",
+              "host": [
+                "{{income}}"
+              ],
+              "path": [
+                "21"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "import",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "description": "csv/tsv/excel/json file that carries name, icon (optional), date (optional), price (optional), description (optional) and category",
+                  "type": "file",
+                  "uuid": "b708deca-b20c-4424-a408-faf304e193ee",
+                  "value": null
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{income}}/import",
+              "host": [
+                "{{income}}"
+              ],
+              "path": [
+                "import"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "export",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{income}}/export/csv",
+              "host": [
+                "{{income}}"
+              ],
+              "path": [
+                "export",
+                "csv"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "expense",
+      "item": [
+        {
+          "name": "create",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\": \"cappuccino\",\r\n    \"category_id\": 18,\r\n    \"price\": 6.99\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{expense}}",
+              "host": [
+                "{{expense}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "read",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "order",
+                  "value": "PRICE_DESCENDING",
+                  "description": "filter order: NAME_ASCENDING/NAME_DESCENDING/DATE_ASCENDING/DATE_DESCENDING/PRICE_ASCENDING/PRICE_DESCENDING//CREATED_ASCENDING/CREATED_DESCENDING/UPDATED_ASCENDING/UPDATED_DESCENDING",
+                  "type": "text",
+                  "uuid": "1a62891c-498d-45ea-a354-f0f9b88c38d5"
+                },
+                {
+                  "key": "keyword",
+                  "value": "b",
+                  "description": "keyword of name",
+                  "type": "text",
+                  "uuid": "e8a10336-b7ad-481b-beef-8ac77404cb0e"
+                },
+                {
+                  "key": "categoryId",
+                  "value": "14",
+                  "description": "id of category",
+                  "type": "text",
+                  "uuid": "d500a7a0-22c4-4946-bfe5-065b90b4ef90",
+                  "disabled": true
+                },
+                {
+                  "key": "dateStart",
+                  "value": "2026-01-01",
+                  "description": "start filtered date",
+                  "type": "text",
+                  "uuid": "6079ec49-6ba3-4c7f-9659-5b3c1b2b51a8"
+                },
+                {
+                  "key": "dateEnd",
+                  "value": "2026-12-31",
+                  "description": "end filtered date",
+                  "type": "text",
+                  "uuid": "1de27734-35df-4e57-b607-694841f07e64",
+                  "disabled": true
+                },
+                {
+                  "key": "priceLow",
+                  "value": "3.99",
+                  "description": "low filtered price",
+                  "type": "text",
+                  "uuid": "085c0543-0285-4ddd-bc75-a556a6325e32"
+                },
+                {
+                  "key": "priceHigh",
+                  "value": "5.99",
+                  "description": "high filtered price",
+                  "type": "text",
+                  "uuid": "2abeb704-5d67-491e-8c4d-2a825b9ac41f"
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "index of page",
+                  "type": "text",
+                  "uuid": "f703292e-9d7a-4a7d-a333-d67209d0d097"
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "page size in range [1, 120]",
+                  "type": "text",
+                  "uuid": "fb170570-aebc-484e-ba67-1ded0ec67c61"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{expense}}",
+              "host": [
+                "{{expense}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\": \"iced cappuccino\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{expense}}/9",
+              "host": [
+                "{{expense}}"
+              ],
+              "path": [
+                "9"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "delete",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{expense}}/9",
+              "host": [
+                "{{expense}}"
+              ],
+              "path": [
+                "9"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "import",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "uuid": "19259651-6262-4a8d-a8fe-e5faf11bf1c7",
+                  "description": "csv/tsv/excel/json file that carries name, icon (optional), date (optional), price (optional), description (optional) and category",
+                  "value": null
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{expense}}/import",
+              "host": [
+                "{{expense}}"
+              ],
+              "path": [
+                "import"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "export",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{expense}}/export/json",
+              "host": [
+                "{{expense}}"
+              ],
+              "path": [
+                "export",
+                "json"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "profile",
+      "value": ""
+    },
+    {
+      "key": "category",
+      "value": ""
+    },
+    {
+      "key": "income",
+      "value": ""
+    },
+    {
+      "key": "expense",
+      "value": ""
+    }
+  ]
+}
