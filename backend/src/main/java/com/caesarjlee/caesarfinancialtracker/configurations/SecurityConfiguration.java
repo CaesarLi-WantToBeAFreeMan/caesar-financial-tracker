@@ -35,12 +35,13 @@ public class SecurityConfiguration {
             .cors(Customizer.withDefaults())
             .sessionManagement(
                 session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))   // no session
-            .authorizeHttpRequests(authentication
-                                   -> authentication
-                                          .requestMatchers(HttpMethod.POST, "/register", "/login")   // public endpoints
-                                          .permitAll()
-                                          .anyRequest()   // everything else requires JWT
-                                          .authenticated())
+            .authorizeHttpRequests(
+                authentication
+                -> authentication
+                       .requestMatchers(HttpMethod.POST, "/profiles/register", "/profiles/login")   // public endpoints
+                       .permitAll()
+                       .anyRequest()   // everything else requires JWT
+                       .authenticated())
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);   // JWT filter
         return httpSecurity.build();
