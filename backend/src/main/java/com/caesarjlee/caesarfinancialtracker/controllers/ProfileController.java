@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/profiles")
 public class ProfileController {
     private final ProfileService profileService;
 
@@ -28,8 +29,8 @@ public class ProfileController {
         return ResponseEntity.ok(profileService.login(request));
     }
 
-    @GetMapping("/profile")
-    public ResponseEntity<RegisterResponse> getPublicProfile() {
+    @GetMapping
+    public ResponseEntity<RegisterResponse> read() {
         return ResponseEntity.ok(profileService.getPublicProfileInfo());
     }
 }

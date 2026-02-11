@@ -28,9 +28,9 @@ public class CategoryController {
 
     @GetMapping
     public ResponseEntity<Page<CategoryResponse>>
-    getCategories(@RequestParam(defaultValue = "all") String type, @RequestParam(required = false) String name,
-                  @RequestParam(defaultValue = "CREATED_DESCENDING") String order,
-                  @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "30") int size) {
+    read(@RequestParam(defaultValue = "all") String type, @RequestParam(required = false) String name,
+         @RequestParam(defaultValue = "CREATED_DESCENDING") String order, @RequestParam(defaultValue = "0") int page,
+         @RequestParam(defaultValue = "30") int size) {
         return ResponseEntity.ok(categoryService.read(type, name, order, page, size));
     }
 

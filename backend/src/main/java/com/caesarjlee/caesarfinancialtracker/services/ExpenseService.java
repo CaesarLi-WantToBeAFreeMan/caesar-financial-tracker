@@ -79,19 +79,20 @@ public class ExpenseService {
 
     public ExpenseResponse create(ExpenseRequest request) {
         Long           profileId = profileService.getCurrentProfile().getId();
-
         CategoryEntity category =
             categoryRepository.findByIdAndProfileId(request.categoryId(), profileId)
                 .orElseThrow(() -> new CategoryNotFoundException(Long.toString(request.categoryId())));
-        return toResponse(expenseRepository.save(ExpenseEntity.builder()
-                                                     .name(request.name())
-                                                     .icon(request.icon())
-                                                     .date(request.date())
-                                                     .price(request.price())
-                                                     .description(request.description())
-                                                     .category(category)
-                                                     .profile(profileService.getCurrentProfile())
-                                                     .build()));
+        return toResponse(expenseRepository.save(
+            ExpenseEntity.builder()
+                .name(request.name())
+                .icon(request.icon())
+                .date(request.date() == null ? LocalDate.now() : request.date())
+                .price(request.price() == null ? BigDecimal.ZERO : request.price())
+                .description(request.description() == null || request.description().isBlank() ? request.name()
+                                                                                              : request.description())
+                .category(category)
+                .profile(profileService.getCurrentProfile())
+                .build()));
     }
 
     public Page<ExpenseResponse> read(String order, String keyword, Long categoryId, LocalDate dateStart,
@@ -107,15 +108,16 @@ public class ExpenseService {
     public ExpenseResponse update(Long id, ExpenseRequest request) {
         ExpenseEntity entity = expenseRepository.findByIdAndProfileId(id, profileService.getCurrentProfile().getId())
                                    .orElseThrow(() -> new ExpenseNotFoundException(request.name()));
-        CategoryEntity category =
-            categoryRepository.findById(request.categoryId())
-                .orElseThrow(() -> new CategoryNotFoundException(Long.toString(request.categoryId())));
         entity.setName(request.name());
-        entity.setIcon(request.icon());
-        entity.setDate(request.date());
-        entity.setPrice(request.price());
-        entity.setDescription(request.description());
-        entity.setCategory(category);
+        entity.setIcon(request.icon() == null ? entity.getIcon() : request.icon());
+        entity.setDate(request.date() == null ? entity.getDate() : request.date());
+        entity.setPrice(request.price() == null ? entity.getPrice() : request.price());
+        entity.setDescription(request.description() == null ? request.name() : request.description());
+        entity.setCategory(
+            request.categoryId() == null
+                ? entity.getCategory()
+                : categoryRepository.findById(request.categoryId())
+                      .orElseThrow(() -> new CategoryNotFoundException(Long.toString(request.categoryId()))));
         return toResponse(expenseRepository.save(entity));
     }
 

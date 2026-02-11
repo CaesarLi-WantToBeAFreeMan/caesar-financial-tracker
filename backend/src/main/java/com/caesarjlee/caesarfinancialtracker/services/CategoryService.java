@@ -92,7 +92,7 @@ public class CategoryService {
                                     .orElseThrow(() -> new CategoryNotFoundException(request.name()));
         entity.setName(request.name());
         entity.setType(request.type());
-        entity.setIcon(request.icon());
+        entity.setIcon(request.icon() == null ? entity.getIcon() : request.icon());
         return toResponse(categoryRepository.save(entity));
     }
 
