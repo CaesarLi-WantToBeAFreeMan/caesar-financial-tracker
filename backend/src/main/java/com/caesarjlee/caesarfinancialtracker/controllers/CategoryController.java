@@ -23,7 +23,7 @@ public class CategoryController {
 
     @PostMapping
     public ResponseEntity<CategoryResponse> create(@RequestBody @Valid CategoryRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(categoryService.createCategory(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(categoryService.create(request));
     }
 
     @GetMapping
@@ -31,22 +31,22 @@ public class CategoryController {
     getCategories(@RequestParam(defaultValue = "all") String type, @RequestParam(required = false) String name,
                   @RequestParam(defaultValue = "CREATED_DESCENDING") String order,
                   @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "30") int size) {
-        return ResponseEntity.ok(categoryService.getCategories(type, name, order, page, size));
+        return ResponseEntity.ok(categoryService.read(type, name, order, page, size));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<CategoryResponse> update(@PathVariable Long id, @RequestBody @Valid CategoryRequest request) {
-        return ResponseEntity.ok(categoryService.updateCategory(id, request));
+        return ResponseEntity.ok(categoryService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        categoryService.deleteCategory(id);
+        categoryService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/import")
-    public ResponseEntity<ImportResponse> importCategories(@RequestParam("file") MultipartFile file) throws Exception {
+    public ResponseEntity<ImportResponse> importCategories(@RequestParam("file") MultipartFile file) {
         return ResponseEntity.ok(categoryService.importCategories(file));
     }
 
@@ -54,6 +54,6 @@ public class CategoryController {
     public ResponseEntity<byte []> export(@PathVariable String type) {
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=categories." + type)
-            .body(categoryService.exportCategories(type));
+            .body(categoryService.export(type));
     }
 }

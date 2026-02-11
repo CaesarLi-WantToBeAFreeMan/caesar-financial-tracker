@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class DashboardService {
+    /*
     private final IncomeService  incomeService;
     private final ExpenseService expenseService;
     private final ProfileService profileService;
@@ -33,9 +34,8 @@ public class DashboardService {
             Stream
                 .concat(incomes.stream().map(income
                                                -> new RecentTransaction(income.name(), income.categoryName(), "income",
-                                                                        income.price(), income.date(), income.createdAt(),
-                                                                        income.updatedAt())),
-                          expenses.stream().map(expense
+                                                                        income.price(), income.date(),
+    income.createdAt(), income.updatedAt())), expenses.stream().map(expense
                                                 -> new RecentTransaction(expense.name(), expense.categoryName(),
                                                                          "expense", expense.price(), expense.date(),
                                                                          expense.createdAt(), expense.updatedAt())))
@@ -59,4 +59,5 @@ public class DashboardService {
         data.put("recentTransactions", recentTransactions);
         return data;
     }
+    */
 }

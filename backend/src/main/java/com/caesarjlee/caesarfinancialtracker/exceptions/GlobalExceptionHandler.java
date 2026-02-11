@@ -82,22 +82,10 @@ public class GlobalExceptionHandler {
             .body(error(HttpStatus.NOT_FOUND, incomeNotFoundException.getMessage()));
     }
 
-    @ExceptionHandler(IncomeUnauthorizedException.class)
-    public ResponseEntity<?> handleUnauthorized(IncomeUnauthorizedException incomeUnauthorizedException) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-            .body(error(HttpStatus.UNAUTHORIZED, incomeUnauthorizedException.getMessage()));
-    }
-
     @ExceptionHandler(ExpenseNotFoundException.class)
     public ResponseEntity<?> handleNotFound(ExpenseNotFoundException expenseNotFoundException) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
             .body(error(HttpStatus.NOT_FOUND, expenseNotFoundException.getMessage()));
-    }
-
-    @ExceptionHandler(ExpenseUnauthorizedException.class)
-    public ResponseEntity<?> handleUnauthorized(ExpenseUnauthorizedException expenseUnauthorizedException) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-            .body(error(HttpStatus.UNAUTHORIZED, expenseUnauthorizedException.getMessage()));
     }
 
     @ExceptionHandler(PageSizeException.class)

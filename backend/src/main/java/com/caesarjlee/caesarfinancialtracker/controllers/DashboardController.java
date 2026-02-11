@@ -14,10 +14,12 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/dashboard")
 @RequiredArgsConstructor
 public class DashboardController {
+    /*
     private final DashboardService dashboardService;
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getDashboardData() {
         return ResponseEntity.ok(dashboardService.getDashboardData());
     }
+    */
 }

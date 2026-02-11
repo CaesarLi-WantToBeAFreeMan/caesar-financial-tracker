@@ -67,7 +67,7 @@ public class CategoryService {
         return PageRequest.of(page, size, validOrder(order).getSort());
     }
 
-    public CategoryResponse createCategory(CategoryRequest request) {
+    public CategoryResponse create(CategoryRequest request) {
         ProfileEntity profile = profileService.getCurrentProfile();
         if(categoryRepository.existsByNameAndTypeAndProfileId(request.name(), request.type(), profile.getId()))
             throw new CategoryAlreadyExistException(request.name());
@@ -79,7 +79,7 @@ public class CategoryService {
                                                       .build()));
     }
 
-    public Page<CategoryResponse> getCategories(String type, String name, String order, int page, int size) {
+    public Page<CategoryResponse> read(String type, String name, String order, int page, int size) {
         Long         profileId = profileService.getCurrentProfile().getId();
         Pageable     pageable  = validPage(order, page, size);
         CategoryType validType = validType(type);
@@ -87,18 +87,16 @@ public class CategoryService {
         return categoryRepository.search(profileId, typeName, name, pageable).map(this::toResponse);
     }
 
-    public CategoryResponse updateCategory(Long id, CategoryRequest request) {
-        ProfileEntity  profile = profileService.getCurrentProfile();
-        CategoryEntity entity  = categoryRepository.findByIdAndProfileId(id, profile.getId())
+    public CategoryResponse update(Long id, CategoryRequest request) {
+        CategoryEntity entity = categoryRepository.findByIdAndProfileId(id, profileService.getCurrentProfile().getId())
                                     .orElseThrow(() -> new CategoryNotFoundException(request.name()));
         entity.setName(request.name());
         entity.setType(request.type());
         entity.setIcon(request.icon());
-        entity = categoryRepository.save(entity);
-        return toResponse(entity);
+        return toResponse(categoryRepository.save(entity));
     }
 
-    public void deleteCategory(Long id) {
+    public void delete(Long id) {
         ProfileEntity  profile  = profileService.getCurrentProfile();
         CategoryEntity category = categoryRepository.findByIdAndProfileId(id, profile.getId())
                                       .orElseThrow(() -> new CategoryNotFoundException("id = " + id));
@@ -114,7 +112,7 @@ public class CategoryService {
         return importFiles.importData(file, new CategoryEntity());
     }
 
-    public byte [] exportCategories(String type) {
+    public byte [] export(String type) {
         return exportFiles.exportData(type, new CategoryEntity());
     }
 }

@@ -2,7 +2,8 @@ package com.caesarjlee.caesarfinancialtracker.repositories;
 
 import com.caesarjlee.caesarfinancialtracker.entities.ExpenseEntity;
 
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,20 +15,20 @@ import java.util.Optional;
 
 public interface ExpenseRepository extends JpaRepository<ExpenseEntity, Long> {
     Optional<ExpenseEntity> findByIdAndProfileId(Long id, Long profileId);
-    // SELECT * FROM cft_expenses WHERE profile_id = ?1 ORDER BY date DESC
-    List<ExpenseEntity>     findByProfileIdOrderByDateDesc(Long profileId);
-    // SELECT * FROM cft_expenses WHERE profile_id = ?1 ORDER BY date DESC LIMIT 5
-    List<ExpenseEntity>     findTop5ByProfileIdOrderByDateDesc(Long profileId);
-
-    @Query("SELECT SUM(e.price) FROM ExpenseEntity e WHERE e.profile.id = :profileId")
-    BigDecimal          findTotalExpenseByProfileId(@Param("profileId") Long profileId);
-
-    // SELECT * FROM cft_expenses WHERE profile_id = ?1 AND date BETWEEN ?2 AND ?3 AND LOWER(name) LIKE LOWER('%' || ?4
-    // || '%') ORDER BY
-    List<ExpenseEntity> findByProfileIdAndDateBetweenAndNameContainingIgnoreCase(Long profileId, LocalDate startDate,
-                                                                                 LocalDate endDate, String keyword,
-                                                                                 Sort sort);
-
-    // SELECT * FROM cft_expenses WHERE profile_id = ?1 AND date BETWEEN ?2 AND ?3
-    List<ExpenseEntity> findByProfileIdAndDateBetween(Long profileId, LocalDate startDate, LocalDate endDate);
+    List<ExpenseEntity>     findByProfileId(Long profileId);
+    @Query("""
+        SELECT e
+        FROM ExpenseEntity e
+        WHERE e.profile.id =:profileId
+        AND (:keyword IS NULL OR LOWER(e.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
+        AND (:categoryId IS NULL OR e.category.id = :categoryId)
+        AND (:dateStart IS NULL OR e.date >= :dateStart)
+        AND (:dateEnd IS NULL OR e.date <= :dateEnd)
+        AND (:priceLow IS NULL OR e.price >= :priceLow)
+        AND (:priceHigh IS NULL OR e.price <= :priceHigh)
+    """)
+    Page<ExpenseEntity> search(@Param("profileId") Long profileId, @Param("keyword") String keyword,
+                               @Param("categoryId") Long categoryId, @Param("dateStart") LocalDate dateStart,
+                               @Param("dateEnd") LocalDate dateEnd, @Param("priceLow") BigDecimal priceLow,
+                               @Param("priceHigh") BigDecimal priceHigh, Pageable pageable);
 }
