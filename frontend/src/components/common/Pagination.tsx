@@ -16,7 +16,7 @@ export default function Page({page, totalPages, onChange}: Props) {
             </button>
 
             <span className="text-cyan-300 text-sm tracking-wide">
-                {page + 1} / {totalPages}
+                {totalPages === 0 ? 0 : page + 1} / {totalPages}
             </span>
 
             <button
