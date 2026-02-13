@@ -1,35 +1,24 @@
 package com.caesarjlee.caesarfinancialtracker.utilities;
 
 import com.caesarjlee.caesarfinancialtracker.dtos.CategoryExportDto;
-import com.caesarjlee.caesarfinancialtracker.entities.CategoryEntity;
-import com.caesarjlee.caesarfinancialtracker.entities.ExpenseEntity;
-import com.caesarjlee.caesarfinancialtracker.entities.IncomeEntity;
+import com.caesarjlee.caesarfinancialtracker.entities.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.files.ExportFileException;
 import com.caesarjlee.caesarfinancialtracker.exceptions.files.entities.InvalidEntityException;
 import com.caesarjlee.caesarfinancialtracker.exceptions.files.filetypes.InvalidFiletypeException;
-import com.caesarjlee.caesarfinancialtracker.repositories.CategoryRepository;
-import com.caesarjlee.caesarfinancialtracker.repositories.ExpenseRepository;
-import com.caesarjlee.caesarfinancialtracker.repositories.IncomeRepository;
+import com.caesarjlee.caesarfinancialtracker.repositories.*;
 import com.caesarjlee.caesarfinancialtracker.services.ProfileService;
 
 import com.opencsv.CSVWriter;
 
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.ByteArrayOutputStream;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import tools.jackson.databind.ObjectMapper;
 
@@ -38,8 +27,7 @@ import tools.jackson.databind.ObjectMapper;
 @Transactional(readOnly = true)
 public class ExportFiles {
     private final CategoryRepository categoryRepository;
-    private final IncomeRepository   incomeRepository;
-    private final ExpenseRepository  expenseRepository;
+    private final RecordRepository   recordRepository;
     private final ProfileService     profileService;
     private final ObjectMapper       objectMapper;
 
@@ -95,12 +83,13 @@ public class ExportFiles {
                                return categories;
                            })
                            .toList();
-            } else if(entity instanceof IncomeEntity) {
-                data = incomeRepository.findByProfileId(profileId)
+            } else if(entity instanceof RecordEntity) {
+                data = recordRepository.findByProfileId(profileId)
                            .stream()
                            .map(income -> {
                                Map<String, Object> incomes = new LinkedHashMap<>();
                                incomes.put("name", handleNull(income.getName()));
+                               incomes.put("type", handleNull(income.getType()));
                                incomes.put("date", income.getDate().toString());
                                incomes.put("price", income.getPrice());
                                incomes.put("icon", handleNull(income.getIcon()));
@@ -109,23 +98,8 @@ public class ExportFiles {
                                return incomes;
                            })
                            .toList();
-            } else if(entity instanceof ExpenseEntity) {
-                data = expenseRepository.findByProfileId(profileId)
-                           .stream()
-                           .map(expense -> {
-                               Map<String, Object> expenses = new LinkedHashMap<>();
-                               expenses.put("name", handleNull(expense.getName()));
-                               expenses.put("date", expense.getDate().toString());
-                               expenses.put("price", expense.getPrice());
-                               expenses.put("icon", handleNull(expense.getIcon()));
-                               expenses.put("description", handleNull(expense.getDescription()));
-                               expenses.put("category", expense.getCategory().getName());
-                               return expenses;
-                           })
-                           .toList();
-            } else {
+            } else
                 throw new InvalidEntityException(entity.getClass().getSimpleName());
-            }
             return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(data);
         } catch(Exception e) {
             throw new ExportFileException();
@@ -140,23 +114,16 @@ public class ExportFiles {
             for(CategoryEntity category : categoryRepository.findByProfileId(profileId))
                 table.add(new String [] {handleNull(category.getName()), handleNull(category.getType()),
                                          handleNull(category.getIcon())});
-        } else if(entity instanceof IncomeEntity) {
-            table.add(new String [] {"name", "date", "price", "icon", "description", "category"});
-            for(IncomeEntity income : incomeRepository.findByProfileId(profileId))
-                table.add(new String [] {handleNull(income.getName()),
-                                         income.getDate().format(DateTimeFormatter.ISO_LOCAL_DATE),
-                                         income.getPrice().toPlainString(), handleNull(income.getIcon()),
-                                         handleNull(income.getDescription()), income.getCategory().getName()});
-        } else if(entity instanceof ExpenseEntity) {
-            table.add(new String [] {"name", "date", "price", "icon", "description", "category"});
-            for(ExpenseEntity expense : expenseRepository.findByProfileId(profileId))
-                table.add(new String [] {handleNull(expense.getName()),
-                                         expense.getDate().format(DateTimeFormatter.ISO_LOCAL_DATE),
-                                         expense.getPrice().toPlainString(), handleNull(expense.getIcon()),
-                                         handleNull(expense.getDescription()), expense.getCategory().getName()});
-        } else {
+        } else if(entity instanceof RecordEntity) {
+            table.add(new String [] {"name", "type", "date", "price", "icon", "description", "category"});
+            for(RecordEntity record : recordRepository.findByProfileId(profileId))
+                table.add(new String [] {handleNull(record.getName()),
+                                         handleNull(record.getType()),
+                                         record.getDate().format(DateTimeFormatter.ISO_LOCAL_DATE),
+                                         record.getPrice().toPlainString(), handleNull(record.getIcon()),
+                                         handleNull(record.getDescription()), record.getCategory().getName()});
+        } else
             throw new InvalidEntityException(entity.getClass().getSimpleName());
-        }
         return table;
     }
 

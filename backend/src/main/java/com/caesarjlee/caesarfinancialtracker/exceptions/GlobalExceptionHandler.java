@@ -2,9 +2,8 @@ package com.caesarjlee.caesarfinancialtracker.exceptions;
 
 import com.caesarjlee.caesarfinancialtracker.exceptions.authentication.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.categories.*;
-import com.caesarjlee.caesarfinancialtracker.exceptions.expenses.*;
+import com.caesarjlee.caesarfinancialtracker.exceptions.records.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.files.filetypes.*;
-import com.caesarjlee.caesarfinancialtracker.exceptions.incomes.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.pages.*;
 
 import org.springframework.http.HttpStatus;
@@ -76,16 +75,10 @@ public class GlobalExceptionHandler {
             .body(error(HttpStatus.BAD_REQUEST, invalidFileTypeException.getMessage()));
     }
 
-    @ExceptionHandler(IncomeNotFoundException.class)
-    public ResponseEntity<?> handleNotFound(IncomeNotFoundException incomeNotFoundException) {
+    @ExceptionHandler(RecordNotFoundException.class)
+    public ResponseEntity<?> handleNotFound(RecordNotFoundException renocrdNotFoundException) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-            .body(error(HttpStatus.NOT_FOUND, incomeNotFoundException.getMessage()));
-    }
-
-    @ExceptionHandler(ExpenseNotFoundException.class)
-    public ResponseEntity<?> handleNotFound(ExpenseNotFoundException expenseNotFoundException) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-            .body(error(HttpStatus.NOT_FOUND, expenseNotFoundException.getMessage()));
+            .body(error(HttpStatus.NOT_FOUND, renocrdNotFoundException.getMessage()));
     }
 
     @ExceptionHandler(PageSizeException.class)

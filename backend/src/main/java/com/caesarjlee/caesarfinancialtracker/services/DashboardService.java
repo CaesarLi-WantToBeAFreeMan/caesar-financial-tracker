@@ -1,7 +1,5 @@
 package com.caesarjlee.caesarfinancialtracker.services;
 
-import com.caesarjlee.caesarfinancialtracker.dtos.ExpenseResponse;
-import com.caesarjlee.caesarfinancialtracker.dtos.IncomeResponse;
 import com.caesarjlee.caesarfinancialtracker.dtos.RecentTransaction;
 import com.caesarjlee.caesarfinancialtracker.entities.ProfileEntity;
 

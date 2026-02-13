@@ -1,10 +1,11 @@
 package com.caesarjlee.caesarfinancialtracker.services;
 
-import com.caesarjlee.caesarfinancialtracker.dtos.*;
+import com.caesarjlee.caesarfinancialtracker.dtos.records.*;
+import com.caesarjlee.caesarfinancialtracker.dtos.ImportResponse;
 import com.caesarjlee.caesarfinancialtracker.entities.*;
 import com.caesarjlee.caesarfinancialtracker.enumerations.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.categories.CategoryNotFoundException;
-import com.caesarjlee.caesarfinancialtracker.exceptions.incomes.*;
+import com.caesarjlee.caesarfinancialtracker.exceptions.records.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.pages.PageSizeException;
 import com.caesarjlee.caesarfinancialtracker.repositories.*;
 import com.caesarjlee.caesarfinancialtracker.utilities.*;
@@ -20,15 +21,15 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class IncomeService {
+public class RecordService {
     private final ProfileService     profileService;
     private final CategoryRepository categoryRepository;
-    private final IncomeRepository   incomeRepository;
+    private final RecordRepository   recordRepository;
     private final ImportFiles        importFiles;
     private final ExportFiles        exportFiles;
 
-    private IncomeResponse           toResponse(IncomeEntity entity) {
-        return new IncomeResponse(entity.getId(), entity.getName(), entity.getIcon(), entity.getDate(),
+    private RecordResponse           toResponse(RecordEntity entity) {
+        return new RecordResponse(entity.getId(), entity.getName(), entity.getType(), entity.getIcon(), entity.getDate(),
                                             entity.getPrice(), entity.getDescription(), entity.getCreatedAt(),
                                             entity.getUpdatedAt(), entity.getCategory().getName());
     }
@@ -38,7 +39,7 @@ public class IncomeService {
         try {
             validOrder = RecordOrders.valueOf(order.toUpperCase());
         } catch(Exception e) {
-            throw new IncomeOrderNotFoundException(order);
+            throw new RecordOrderNotFoundException(order);
         }
         return validOrder;
     }
@@ -52,26 +53,27 @@ public class IncomeService {
     private void validate(LocalDate start, LocalDate end, BigDecimal low, BigDecimal high) {
         // dates
         if(end != null && end.isAfter(LocalDate.now()))
-            throw new InvalidIncomeDateException(end.toString() + " must be <= " + LocalDate.now().toString());
+            throw new InvalidRecordDateException(end.toString() + " must be <= " + LocalDate.now().toString());
         if(start != null && end != null && start.isAfter(end))
-            throw new InvalidIncomeDateException(start.toString() + " must be <= " + end.toString());
+            throw new InvalidRecordDateException(start.toString() + " must be <= " + end.toString());
         // prices
         if(low != null && low.compareTo(BigDecimal.ZERO) < 0)
-            throw new InvalidIncomePriceException(low.toString() + " must be >= 0");
+            throw new InvalidRecordPriceException(low.toString() + " must be >= 0");
         if(high != null && high.compareTo(BigDecimal.ZERO) < 0)
-            throw new InvalidIncomePriceException(high.toString() + " must be >= 0");
+            throw new InvalidRecordPriceException(high.toString() + " must be >= 0");
         if(low != null && high != null && low.compareTo(high) > 0)
-            throw new InvalidIncomePriceException(low.toString() + " must be <= " + high.toString());
+            throw new InvalidRecordPriceException(low.toString() + " must be <= " + high.toString());
     }
 
-    public IncomeResponse create(IncomeRequest request) {
+    public RecordResponse create(RecordRequest request) {
         Long           profileId = profileService.getCurrentProfile().getId();
         CategoryEntity category =
             categoryRepository.findByIdAndProfileId(request.categoryId(), profileId)
                 .orElseThrow(() -> new CategoryNotFoundException(Long.toString(request.categoryId())));
-        return toResponse(incomeRepository.save(
-            IncomeEntity.builder()
+        return toResponse(recordRepository.save(
+            RecordEntity.builder()
                 .name(request.name())
+                .type(request.type())
                 .icon(request.icon())
                 .date(request.date() == null ? LocalDate.now() : request.date())
                 .price(request.price() == null ? BigDecimal.ZERO : request.price())
@@ -82,19 +84,20 @@ public class IncomeService {
                 .build()));
     }
 
-    public Page<IncomeResponse> read(String order, String keyword, Long categoryId, LocalDate dateStart,
+    public Page<RecordResponse> read(String order, String type, String keyword, Long categoryId, LocalDate dateStart,
                                      LocalDate dateEnd, BigDecimal priceLow, BigDecimal priceHigh, int page, int size) {
         validate(dateStart, dateEnd, priceLow, priceHigh);
-        return incomeRepository
-            .search(profileService.getCurrentProfile().getId(), keyword, categoryId, dateStart, dateEnd, priceLow,
+        return recordRepository
+            .search(profileService.getCurrentProfile().getId(), keyword, type, categoryId, dateStart, dateEnd, priceLow,
                     priceHigh, validPage(order, page, size))
             .map(this::toResponse);
     }
 
-    public IncomeResponse update(Long id, IncomeRequest request) {
-        IncomeEntity entity = incomeRepository.findByIdAndProfileId(id, profileService.getCurrentProfile().getId())
-                                  .orElseThrow(() -> new IncomeNotFoundException(request.name()));
+    public RecordResponse update(Long id, RecordRequest request) {
+        RecordEntity entity = recordRepository.findByIdAndProfileId(id, profileService.getCurrentProfile().getId())
+                                  .orElseThrow(() -> new RecordNotFoundException(request.name()));
         entity.setName(request.name());
+        entity.setType(request.type() == null ? entity.getType() : request.type());
         entity.setIcon(request.icon() == null ? entity.getIcon() : request.icon());
         entity.setDate(request.date() == null ? entity.getDate() : request.date());
         entity.setPrice(request.price() == null ? entity.getPrice() : request.price());
@@ -104,19 +107,20 @@ public class IncomeService {
                 ? entity.getCategory()
                 : categoryRepository.findById(request.categoryId())
                       .orElseThrow(() -> new CategoryNotFoundException(Long.toString(request.categoryId()))));
-        return toResponse(incomeRepository.save(entity));
+        return toResponse(recordRepository.save(entity));
     }
 
     public void delete(Long id) {
-        incomeRepository.delete(incomeRepository.findByIdAndProfileId(id, profileService.getCurrentProfile().getId())
-                                    .orElseThrow(() -> new IncomeNotFoundException(Long.toString(id))));
+        recordRepository.delete(recordRepository.findByIdAndProfileId(id, profileService.getCurrentProfile().getId())
+                                    .orElseThrow(() -> new RecordNotFoundException(Long.toString(id))));
     }
 
-    public ImportResponse importIncome(MultipartFile file) {
-        return importFiles.importData(file, new IncomeEntity());
+    public ImportResponse importRecord(MultipartFile file) {
+        return importFiles.importData(file, new RecordEntity());
     }
 
     public byte [] export(String type) {
-        return exportFiles.exportData(type, new IncomeEntity());
+        return exportFiles.exportData(type, new RecordEntity());
     }
 }
+

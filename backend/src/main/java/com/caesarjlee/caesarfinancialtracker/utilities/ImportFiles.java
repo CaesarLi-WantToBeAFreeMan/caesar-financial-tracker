@@ -34,8 +34,7 @@ import tools.jackson.databind.ObjectMapper;
 @Transactional
 public class ImportFiles {
     private final CategoryRepository categoryRepository;
-    private final IncomeRepository   incomeRepository;
-    private final ExpenseRepository  expenseRepository;
+    private final RecordRepository   recordRepository;
     private final ObjectMapper       objectMapper;
     private final ProfileService     profileService;
 
@@ -152,6 +151,12 @@ public class ImportFiles {
         return priceObject;
     }
 
+    private String parseType(String type){
+        if(!(type.equals("income") || type.equals("expense")))
+            throw new InvalidRecordTypeException("type");
+        return type;
+    }
+
     private ImportResponse handleImport(List<String []> table, Object entity) {
         if(table == null || table.isEmpty())
             throw new EmptyFileException();
@@ -206,14 +211,12 @@ public class ImportFiles {
                     response.fail("invalid data at row #" + index);
                 }
             }
-        } else if(entity instanceof IncomeEntity || entity instanceof ExpenseEntity) {
-            validateHeaders(headers, Set.of("name", "date", "price", "category", "icon", "description"),
-                            List.of("name", "date", "price", "category"));
-            String                      type = entity instanceof IncomeEntity ? "income" : "expense";
+        } else if(entity instanceof RecordEntity){
+            validateHeaders(headers, Set.of("name", "type", "date", "price", "category", "icon", "description"),
+                            List.of("name", "type", "date", "price", "category"));
             Map<String, CategoryEntity> categories =
                 categoryRepository.findByProfileId(profile.getId())
                     .stream()
-                    .filter(category -> category.getType().equalsIgnoreCase(type))
                     .collect(Collectors.toMap(category -> category.getName(), category -> category));
             int index = 1;
             for(var row : table) {
@@ -221,16 +224,17 @@ public class ImportFiles {
                     continue;
                 index++;
                 try {
-                    String name = null, date = null, price = null, icon = null, description = null, category = null;
+                    String name = null, type = null, date = null, price = null, icon = null, description = null, category = null;
                     for(int i = 0; i < headers.length; i++) {
                         String value = getCell(row, i);
                         switch(headers [i]) {
-                        case "name"        -> name = value;
-                        case "date"        -> date = value;
-                        case "price"       -> price = value;
-                        case "icon"        -> icon = value;
-                        case "description" -> description = value;
-                        case "category"    -> category = value;
+                            case "name"        -> name = value;
+                            case "type"        -> type = value;
+                            case "date"        -> date = value;
+                            case "price"       -> price = value;
+                            case "icon"        -> icon = value;
+                            case "description" -> description = value;
+                            case "category"    -> category = value;
                         }
                     }
                     if(category == null || category.trim().isBlank())
@@ -240,33 +244,24 @@ public class ImportFiles {
                         throw new CategoryNotFoundException(category);
                     if(name == null || name.isBlank())
                         throw new RecordNameEmptyException();
+                    if(type == null || name.isBlank())
+                    throw new RecordTypeEmptyException();
                     if(date == null || date.isBlank())
                         throw new RecordDateEmptyException();
                     if(price == null || price.isBlank())
                         throw new RecordPriceEmptyException();
                     if(description == null || description.trim().isBlank())
                         description = name;
-                    if(type == "income") {
-                        incomeRepository.save(IncomeEntity.builder()
-                                                  .name(name)
-                                                  .date(parseDate(date))
-                                                  .price(parsePrice(price))
-                                                  .icon(icon)
-                                                  .description(description)
-                                                  .category(categoryEntity)
-                                                  .profile(profile)
-                                                  .build());
-                    } else {
-                        expenseRepository.save(ExpenseEntity.builder()
-                                                   .name(name)
-                                                   .date(parseDate(date))
-                                                   .price(new BigDecimal(price))
-                                                   .icon(icon)
-                                                   .description(description)
-                                                   .category(categoryEntity)
-                                                   .profile(profile)
-                                                   .build());
-                    }
+                    recordRepository.save(RecordEntity.builder()
+                                        .name(name)
+                                        .type(parseType(type))
+                                        .date(parseDate(date))
+                                        .price(parsePrice(price))
+                                        .icon(icon)
+                                        .description(description)
+                                        .category(categoryEntity)
+                                        .profile(profile)
+                                        .build());
                     response.success();
                 } catch(CategoryNameEmptyException e) {
                     response.fail("empty category name at row #" + index);
@@ -274,6 +269,8 @@ public class ImportFiles {
                     response.fail("category doesn't exist at row #" + index);
                 } catch(RecordNameEmptyException e) {
                     response.fail("empty name at row #" + index);
+                } catch(RecordTypeEmptyException e) {
+                    response.fail("empty type at row #" + index);
                 } catch(RecordDateEmptyException e) {
                     response.fail("empty date at row #" + index);
                 } catch(RecordPriceEmptyException e) {
@@ -284,6 +281,8 @@ public class ImportFiles {
                     response.fail("invalid date (<= today) at row #" + index);
                 } catch(InvalidRecordPriceException e) {
                     response.fail("invalid price (>= 0) at row #" + index);
+                } catch(InvalidRecordTypeException e) {
+                    response.fail("invalid type (only income/expense) at row #" + index);
                 } catch(Exception e) {
                     response.fail("invalid data at row #" + index);
                 }
