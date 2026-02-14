@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/incomes")
+@RequestMapping("/records")
 public class RecordController {
     private final RecordService recordService;
 
