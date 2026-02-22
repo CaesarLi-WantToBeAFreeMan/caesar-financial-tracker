@@ -3,8 +3,7 @@ import "./app.css";
 import Home from "./pages/Home";
 import Category from "./pages/Category";
 import Filter from "./pages/Filter";
-import Income from "./pages/Income";
-import Expense from "./pages/Expense";
+import Record from "./pages/Record";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import {Toaster} from "react-hot-toast";
@@ -27,8 +26,7 @@ export default function App() {
                         <Route path="/dashboard" element={<Home />} />
                         <Route path="/category" element={<Category />} />
                         <Route path="/filter" element={<Filter />} />
-                        <Route path="/income" element={<Income />} />
-                        <Route path="/expense" element={<Expense />} />
+                        <Route path="/record" element={<Record />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/signup" element={<Signup />} />
                         <Route path="/settings" element={<Settings />} />

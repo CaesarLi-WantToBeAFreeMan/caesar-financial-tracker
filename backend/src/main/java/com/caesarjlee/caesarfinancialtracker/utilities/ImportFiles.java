@@ -12,6 +12,8 @@ import com.caesarjlee.caesarfinancialtracker.repositories.*;
 import com.caesarjlee.caesarfinancialtracker.services.ProfileService;
 
 import com.opencsv.*;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.poi.EmptyFileException;
 import org.apache.poi.ss.usermodel.*;
@@ -21,13 +23,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.format.*;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
 
 @Service
 @RequiredArgsConstructor
@@ -88,10 +89,10 @@ public class ImportFiles {
             List<Map<String, Object>> raw = objectMapper.readValue(file.getInputStream(), new TypeReference<>() {});
             if(raw.isEmpty())
                 throw new EmptyFileException();
-            List<String>    headers = new ArrayList<>(raw.get(0).keySet());
+            List<String>    headers = raw.get(0).keySet().stream().sorted().toList();
             List<String []> table   = new ArrayList<>();
-            table.add(headers.toArray(String [] ::new));
-            for(Map<String, Object> row : raw) {
+            table.add(headers.toArray(String []::new));
+            for(var row : raw) {
                 String [] line = new String [headers.size()];
                 for(int i = 0; i < headers.size(); i++)
                     line [i] = Objects.toString(row.get(headers.get(i)), null);
@@ -103,69 +104,77 @@ public class ImportFiles {
         }
     }
 
-    private String [] normalizeHeaders(String [] raw) {
-        return Arrays.stream(raw)
-            .map(header -> header == null ? "" : header.trim().toLowerCase())
-            .toArray(String [] ::new);
-    }
-
-    private void validateHeaders(String [] headers, Set<String> allowed, List<String> required) {
+    private void validateHeaders(String [] headers, Set<String> allowed, Set<String> required) {
+        Set<String> headerSet = new HashSet<>(Arrays.asList(headers));
         for(String header : headers)
             if(!allowed.contains(header))
                 throw new InvalidRequiredColumnException(header);
         for(String require : required)
-            if(!Arrays.asList(headers).contains(require))
+            if(!headerSet.contains(require))
                 throw new InvalidRequiredColumnException(require);
+    }
+
+    private boolean isEmptyRow(String [] row){
+        return Arrays.stream(row).allMatch(cell -> cell == null || cell.isBlank());
     }
 
     private String getCell(String [] row, int index) {
         if(row == null || index >= row.length)
             return null;
         String value = row [index];
-        return value == null || value.isBlank() ? null : value.trim();
+        return (value == null || value.isBlank()) ? null : value.trim();
     }
 
     private LocalDate parseDate(String date) {
-        LocalDate dateObject = null;
+        if(date == null || date.isBlank())
+            throw new RecordDateEmptyException();
         for(DateTimeFormatter formatter : FORMATTERS)
             try {
-                dateObject = LocalDate.parse(date, formatter);
-                break;
+                LocalDate parsedDate = LocalDate.parse(date.trim(), formatter);
+                if(parsedDate.isAfter(LocalDate.now()))
+                    throw new InvalidRecordDateException(date + " must <= " + LocalDate.now().toString());
+                return parsedDate;
             } catch(Exception ignore) {}
-        if(dateObject == null)
-            throw new InvalidDateFormatException();
-        if(dateObject.isAfter(LocalDate.now()))
-            throw new InvalidRecordDateException(date + " must be <= " + LocalDate.now().toString());
-        return dateObject;
+        throw new InvalidDateFormatException();
     }
 
     private BigDecimal parsePrice(String price) {
-        BigDecimal priceObject = null;
+        if(price == null || price.isBlank())
+            throw new RecordPriceEmptyException();
         try {
-            priceObject = new BigDecimal(price);
-        } catch(Exception e) {
+            BigDecimal parsedPrice = new BigDecimal(price.trim());
+            if(parsedPrice.compareTo(BigDecimal.ZERO) < 0)
+                throw new InvalidRecordPriceException(price + " must be >= 0");
+            if(parsedPrice.scale() > 2)
+                throw new InvalidRecordPriceException(price + " must have at most 2 decimal places");
+            return parsedPrice.setScale(2, RoundingMode.UNNECESSARY);
+        } catch(NumberFormatException e) {
             throw new InvalidRecordPriceException(price + " must be a number");
+        } catch(ArithmeticException e){
+            throw new InvalidRecordPriceException(price + " must have at most 2 decimal places");
         }
-        if(priceObject.compareTo(BigDecimal.ZERO) < 0)
-            throw new InvalidRecordPriceException(price + " must be >= 0");
-        return priceObject;
     }
 
     private String parseType(String type){
-        if(!(type.equals("income") || type.equals("expense")))
-            throw new InvalidRecordTypeException("type");
-        return type;
+        if(type == null || type.isBlank())
+            throw new RecordTypeEmptyException();
+        String parsedType = type.trim().toLowerCase();
+        if(!parsedType.equals("income") && !parsedType.equals("expense"))
+            throw new InvalidRecordTypeException(parsedType);
+        return parsedType;
     }
 
     private ImportResponse handleImport(List<String []> table, Object entity) {
         if(table == null || table.isEmpty())
             throw new EmptyFileException();
         ImportResponse response = new ImportResponse();
-        String []      headers  = normalizeHeaders(table.get(0));
+        String []      headers  = Arrays.stream(table.get(0))
+                                                    .map(header -> header == null ? "" : header.toLowerCase())
+                                                    .toArray(String []::new);
         ProfileEntity  profile  = profileService.getCurrentProfile();
 
         if(entity instanceof CategoryEntity) {
-            validateHeaders(headers, Set.of("name", "type", "icon"), List.of("name", "type"));
+            validateHeaders(headers, Set.of("name", "type", "icon"), Set.of("name", "type"));
             Set<String> existingKeys = categoryRepository.findByProfileId(profile.getId())
                                            .stream()
                                            .map(category -> category.getName().trim() + ":" + category.getType())
@@ -175,21 +184,23 @@ public class ImportFiles {
                 if(row == table.get(0))
                     continue;
                 index++;
+                if(isEmptyRow(row))
+                    continue;
                 try {
                     String name = null, type = null, icon = null;
                     for(int i = 0; i < headers.length; i++) {
                         String value = getCell(row, i);
                         switch(headers [i]) {
-                        case "name" -> name = value;
-                        case "type" -> type = value;
-                        case "icon" -> icon = value;
+                            case "name" -> name = value;
+                            case "type" -> type = value;
+                            case "icon" -> icon = value;
                         }
                     }
-                    if(name == null || name.isBlank())
+                    if(name == null)
                         throw new CategoryNameEmptyException();
-                    if(type == null || type.isBlank())
+                    if(type == null)
                         throw new CategoryTypeEmptyException();
-                    String validType = type.trim().toLowerCase();
+                    String validType = parseType(type);
                     if(!Set.of("income", "expense").contains(validType))
                         throw new InvalidCategoryTypeException(validType);
                     String currentKey = name.trim() + ":" + validType;
@@ -198,7 +209,13 @@ public class ImportFiles {
                         continue;
                     }
                     categoryRepository.save(
-                        CategoryEntity.builder().name(name.trim()).type(validType).icon(icon).profile(profile).build());
+                        CategoryEntity.builder()
+                                    .name(name
+                                    .trim())
+                                    .type(validType)
+                                    .icon((icon == null || icon.isBlank() ? name : icon).trim())
+                                    .profile(profile)
+                                    .build());
                     existingKeys.add(currentKey);
                     response.success();
                 } catch(CategoryNameEmptyException e) {
@@ -206,23 +223,26 @@ public class ImportFiles {
                 } catch(CategoryTypeEmptyException e) {
                     response.fail("empty type at row #" + index);
                 } catch(InvalidCategoryTypeException e) {
-                    response.fail("invalid type (only income/expense) at row #" + index);
+                    response.fail(e.getMessage() + " at row #" + index);
                 } catch(Exception e) {
                     response.fail("invalid data at row #" + index);
                 }
             }
         } else if(entity instanceof RecordEntity){
             validateHeaders(headers, Set.of("name", "type", "date", "price", "category", "icon", "description"),
-                            List.of("name", "type", "date", "price", "category"));
+                            Set.of("name", "type", "date", "price", "category"));
             Map<String, CategoryEntity> categories =
                 categoryRepository.findByProfileId(profile.getId())
                     .stream()
-                    .collect(Collectors.toMap(category -> category.getName(), category -> category));
+                    .collect(Collectors.toMap(category -> category.getName().trim() + ":" + category.getType(),
+                            category -> category));
             int index = 1;
             for(var row : table) {
                 if(row == table.get(0))
                     continue;
                 index++;
+                if(isEmptyRow(row))
+                    continue;
                 try {
                     String name = null, type = null, date = null, price = null, icon = null, description = null, category = null;
                     for(int i = 0; i < headers.length; i++) {
@@ -237,28 +257,27 @@ public class ImportFiles {
                             case "category"    -> category = value;
                         }
                     }
-                    if(category == null || category.trim().isBlank())
-                        throw new CategoryNameEmptyException();
-                    CategoryEntity categoryEntity = categories.get(category.trim());
-                    if(categoryEntity == null)
-                        throw new CategoryNotFoundException(category);
                     if(name == null || name.isBlank())
                         throw new RecordNameEmptyException();
-                    if(type == null || name.isBlank())
-                    throw new RecordTypeEmptyException();
+                    if(type == null || type.isBlank())
+                        throw new RecordTypeEmptyException();
                     if(date == null || date.isBlank())
                         throw new RecordDateEmptyException();
                     if(price == null || price.isBlank())
                         throw new RecordPriceEmptyException();
-                    if(description == null || description.trim().isBlank())
-                        description = name;
+                    if(category == null || category.isBlank())
+                        throw new CategoryNameEmptyException();
+                    String validType = parseType(type), key = category.trim() + ":" + validType;
+                    CategoryEntity categoryEntity = categories.get(key);
+                    if(categoryEntity == null)
+                        throw new CategoryNotFoundException(category);
                     recordRepository.save(RecordEntity.builder()
-                                        .name(name)
-                                        .type(parseType(type))
+                                        .name(name.trim())
+                                        .type(validType)
                                         .date(parseDate(date))
                                         .price(parsePrice(price))
-                                        .icon(icon)
-                                        .description(description)
+                                        .icon(icon == null || icon.isBlank() ? "" : icon.trim())
+                                        .description((description == null || description.isBlank() ? name : description).trim())
                                         .category(categoryEntity)
                                         .profile(profile)
                                         .build());
@@ -276,13 +295,13 @@ public class ImportFiles {
                 } catch(RecordPriceEmptyException e) {
                     response.fail("empty price at row #" + index);
                 } catch(InvalidDateFormatException e) {
-                    response.fail("invalid date format at row #" + index);
+                    response.fail(e.getMessage() + " at row #" + index);
                 } catch(InvalidRecordDateException e) {
-                    response.fail("invalid date (<= today) at row #" + index);
+                    response.fail(e.getMessage() + " at row #" + index);
                 } catch(InvalidRecordPriceException e) {
-                    response.fail("invalid price (>= 0) at row #" + index);
+                    response.fail(e.getMessage() + " at row #" + index);
                 } catch(InvalidRecordTypeException e) {
-                    response.fail("invalid type (only income/expense) at row #" + index);
+                    response.fail(e.getMessage() + " at row #" + index);
                 } catch(Exception e) {
                     response.fail("invalid data at row #" + index);
                 }
@@ -300,11 +319,11 @@ public class ImportFiles {
             throw new InvalidFilenameException();
         String          filetype = filename.substring(filename.lastIndexOf('.') + 1).toLowerCase();
         List<String []> table    = switch(filetype) {
-            case "csv"           -> readCsv(file, ',');
-            case "tsv"           -> readCsv(file, '\t');
-            case "xls", "xlsx" -> readExcel(file);
-            case "json"          -> readJson(file);
-            default                -> throw new InvalidFiletypeException(filetype);
+            case "csv"          -> readCsv(file, ',');
+            case "tsv"          -> readCsv(file, '\t');
+            case "xls", "xlsx"  -> readExcel(file);
+            case "json"         -> readJson(file);
+            default             -> throw new InvalidFiletypeException(filetype);
         };
         return handleImport(table, entity);
     }

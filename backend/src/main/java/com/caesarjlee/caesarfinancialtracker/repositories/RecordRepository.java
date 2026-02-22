@@ -16,9 +16,9 @@ public interface RecordRepository extends JpaRepository <RecordEntity, Long> {
     @Query("""
         SELECT r
         FROM RecordEntity r
-        WHERE r.profile.id =:profileId
+        WHERE r.profile.id = :profileId
             AND (:keyword IS NULL OR LOWER(r.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
-            AND (:type IS NULL OR LOWER(r.type) = LOWER(:type))
+            AND (:type IS NULL OR :type = 'all' OR LOWER(r.category.type) = LOWER(:type))
             AND (:categoryId IS NULL OR r.category.id = :categoryId)
             AND (:dateStart IS NULL OR r.date >= :dateStart)
             AND (:dateEnd IS NULL OR r.date <= :dateEnd)

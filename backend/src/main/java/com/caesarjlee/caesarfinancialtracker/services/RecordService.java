@@ -31,7 +31,7 @@ public class RecordService {
     private RecordResponse           toResponse(RecordEntity entity) {
         return new RecordResponse(entity.getId(), entity.getName(), entity.getType(), entity.getIcon(), entity.getDate(),
                                             entity.getPrice(), entity.getDescription(), entity.getCreatedAt(),
-                                            entity.getUpdatedAt(), entity.getCategory().getName());
+                                            entity.getUpdatedAt(), entity.getCategory().getId());
     }
 
     private RecordOrders validOrder(String order) {
@@ -123,4 +123,3 @@ public class RecordService {
         return exportFiles.exportData(type, new RecordEntity());
     }
 }
-

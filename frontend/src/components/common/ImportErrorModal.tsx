@@ -26,7 +26,6 @@ export default function ImportErrorModal({isOpen, onClose, success, failed, erro
                         </button>
                     </div>
 
-                    {/* Summary */}
                     <div className="p-6 space-y-4">
                         <div className="flex gap-6 text-sm">
                             <span className="text-emerald-400">
@@ -37,7 +36,6 @@ export default function ImportErrorModal({isOpen, onClose, success, failed, erro
                             </span>
                         </div>
 
-                        {/* Error list */}
                         <div className="max-h-70 overflow-auto rounded-lg border border-red-400/20 bg-black/40 p-3">
                             <ul className="space-y-3 text-sm text-red-300">
                                 {errors.map((error: string, index: number) => (
@@ -49,7 +47,6 @@ export default function ImportErrorModal({isOpen, onClose, success, failed, erro
                             </ul>
                         </div>
 
-                        {/* Footer */}
                         <div className="flex justify-end pt-3">
                             <button
                                 onClick={onClose}

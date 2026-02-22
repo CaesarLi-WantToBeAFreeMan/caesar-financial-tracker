@@ -11,24 +11,20 @@ export default function EmojiPickerPopup({icon, onSelect}: Props) {
     const [isOpen, setIsOpen] = useState(false);
     return (
         <div className="flex items-start gap-4">
-            <div onClick={() => setIsOpen(true)} className="flex cursor-pointer items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-cyan-500/10 border border-cyan-400/30">
-                    {icon ? (
-                        <img src={icon} alt="icon" className="h-6 w-6" />
-                    ) : (
-                        <Image size={20} className="text-cyan-300" />
-                    )}
-                </div>
-                <p className="text-cyan-300">{icon ? "Change icon" : "Pick icon"}</p>
-            </div>
+            <button
+                onClick={() => setIsOpen(true)}
+                className="rounded-lg bg-cyan-500/20 px-4 py-2 text-cyan-300 hover:shadow-[0_0_15px_rgba(34,211,238,0.6)] hover:cursor-pointer"
+            >
+                <p className="text-cyan-300">Emoji</p>
+            </button>
 
             {isOpen && (
-                <div className="relative">
+                <div className="absolute right-10 bottom-5 z-10">
                     <button
                         onClick={() => setIsOpen(false)}
-                        className="absolute -right-2 -top-2 z-10 rounded-full bg-black p-1"
+                        className="absolute right-0 top-0 z-50 rounded-lg bg-black p-1 hover:bg-cyan-200 hover:cursor-pointer transition"
                     >
-                        <CircleX size={18} className="text-[#e06c75]" />
+                        <CircleX size={18} className="text-red-500" />
                     </button>
 
                     <EmojiPicker

@@ -1,5 +1,6 @@
 import {Trash} from "lucide-react";
 import type {CategoryData} from "../../types/CategoryData";
+import {RenderIcon} from "../../utilities/icon";
 
 interface Props {
     category: CategoryData;
@@ -18,17 +19,18 @@ export default function DeleteCategoryConfirm({category, onConfirm, onCancel}: P
                 </p>
             </div>
 
-            {/* Category preview */}
-            <div className="rounded-lg border border-cyan-400/20 bg-black/40 p-4">
-                <p className="text-cyan-200 font-medium truncate">{category.name}</p>
-                <p className="text-xs uppercase tracking-widest mt-1">
-                    <span className={category.type === "income" ? "text-[#98c379]" : "text-[#e06c75]"}>
-                        {category.type}
-                    </span>
-                </p>
+            <div className="flex items-center gap-3 group rounded-lg border border-cyan-400/20 bg-black/40 p-3 transtion duration-300 hover:bg-cyan-400/5 hover:cursor-pointer">
+                <RenderIcon icon={category.icon} name={category.name} className="group-hover:animate-bounce" />
+                <div
+                    className={`flex flex-col items-center gap-1 ${category.type === "income" ? "text-green-400" : "text-red-400"}`}
+                >
+                    <p className="font-medium truncate transition duration-300 group-hover:text-cyan-400">
+                        {category.name}
+                    </p>
+                    <p className="text-xs uppercase tracking-widest">{category.type}</p>
+                </div>
             </div>
 
-            {/* Actions */}
             <div className="flex justify-end gap-3 pt-4">
                 <button
                     onClick={onCancel}

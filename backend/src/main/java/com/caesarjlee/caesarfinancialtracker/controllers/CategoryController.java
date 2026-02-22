@@ -34,6 +34,11 @@ public class CategoryController {
         return ResponseEntity.ok(categoryService.read(type, name, order, page, size));
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity <CategoryResponse> fetch(@PathVariable Long id){
+        return ResponseEntity.ok(categoryService.fetch(id));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<CategoryResponse> update(@PathVariable Long id, @RequestBody @Valid CategoryRequest request) {
         return ResponseEntity.ok(categoryService.update(id, request));

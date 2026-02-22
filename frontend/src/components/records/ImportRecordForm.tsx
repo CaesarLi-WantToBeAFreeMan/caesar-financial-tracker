@@ -10,29 +10,61 @@ import ImportErrorModal from "../common/ImportErrorModal";
 type FileType = "csv" | "tsv" | "xlsx" | "json";
 const EXAMPLES: Record<FileType, String> = {
     csv: `
-name,type,icon
-breakfast,expense,
-lunch,expense,https://cdn.jsdelivr.net/npm/emoji-datasource-apple/img/apple/64/1f371.png
-salary,income,$
-bonus,income,💰`,
+name,type,date,price,category,icon,description
+january salary,income,2026-01-01,1989.64,salary,https://cdn.jsdelivr.net/npm/emoji-datasource-apple/img/apple/64/1f45c.png,
+burger,expense,jan-01-2026,3.99,food,🍔,big mac,
+coffee,expense,jan/01/2026,5.99,drink,coffee,americano,
+doughnut,expense,01/01/2026,5.99,food,,,`,
     tsv: `
-name\ttype\ticon
-breakfast\texpense\t
-lunch\texpense\thttps://cdn.jsdelivr.net/npm/emoji-datasource-apple/img/apple/64/1f371.png
-salary\tincome\t$
-bonus\tincome\t💰`,
+name\ttype\tdate\tprice\tcategory\ticon\tdescription
+january salary\tincome\t2026-01-01\t1989.64\tsalary\thttps://cdn.jsdelivr.net/npm/emoji-datasource-apple/img/apple/64/1f45c.png\t
+burger\texpense\tjan-01-2026\t3.99\tfood\t🍔\tbig mac\t
+coffee\texpense\tjan/01/2026\t5.99\tdrink\tcoffee\tamericano\t
+doughnut\texpense\t01/01/2026\t5.99\tfood\t\t\t`,
     xlsx: `
-| name      | type      | icon                                                                          |
-| breakfast | expense   |                                                                               |
-| lunch     | expense   | https://cdn.jsdelivr.net/npm/emoji-datasource-apple/img/apple/64/1f371.png    |
-| salary    | income    | $                                                                             |
-| bonus     | income    | 💰                                                                            |`,
+| name              | type      | date          | price     | category  | icon                                                                          | descriptiin   |
+| january salary    | income    | 2026-01-01    | 1989.64   | salary    | https://cdn.jsdelivr.net/npm/emoji-datasource-apple/img/apple/64/1f45c.png    |               |
+| burger            | expense   | jan-01-2026   | 3.99      | food      | 🍔                                                                            | big mac       |
+| coffee            | expense   | jan/01/2026   | 5.99      | drink     | coffee                                                                        | americano     |
+| doughnut          | expense   | 01/01/2026    | 5.99      | food      |                                                                               |               |`,
     json: `
 [
-    {"name": "breakfast", "type": "expense", "icon": null},
-    {"name": "lunch", "type": "expense", "icon": "https://cdn.jsdelivr.net/npm/emoji-datasource-apple/img/apple/64/1f371.png"},
-    {"name": "salary", "type": "income", "icon": "$"},
-    {"name": "bonus", "type": "income", "icon": "💰"}
+    {
+        "name": "january salary",
+        "type": "income",
+        "date": "2026-01-01",
+        "price": 1989.64,
+        "category": "salary",
+        "icon": "https://cdn.jsdelivr.net/npm/emoji-datasource-apple/img/apple/64/1f45c.png",
+        "description": null
+    },
+    {
+        "name": "burger",
+        "type": "expense",
+        "date": "jan-01-2026",
+        "price": 3.99,
+        "category": "food",
+        "icon": "🍔",
+        "description": "big mac"
+    },
+    {
+        "name": "coffee",
+        "type": "expense",
+        "date": "jan/01/2026",
+        "price": 5.99,
+        "category": "drink",
+        "icon": "coffee",
+        "description": "americano"
+    },
+    {
+        "name": "doughnut",
+        "type": "expense",
+        "date": "01/01/2026",
+        "price": 5.99,
+        "category": "food",
+        "icon": null,
+        "description": null
+    }
 ]`
 };
 
@@ -40,7 +72,7 @@ interface Props {
     onClose: () => void;
 }
 
-export default function CategoryImportModal({onClose}: Props) {
+export default function ImportRecordForm({onClose}: Props) {
     const [fileType, setFileType] = useState<FileType>("csv");
     const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
@@ -56,13 +88,13 @@ export default function CategoryImportModal({onClose}: Props) {
         formData.append("file", file);
         setLoading(true);
         try {
-            const response = await axiosConfig.post<ImportResponse>(API_ENDPOINTS.IMPORT_CATEGORIES, formData, {
+            const response = await axiosConfig.post<ImportResponse>(API_ENDPOINTS.IMPORT_RECORDS, formData, {
                 headers: {"Content-Type": "multipart/form-data"}
             });
             setResult(response.data);
             if (response.data.failed > 0) setShowErrors(true);
             else {
-                toast.success(`Import ${response.data.success} categories`);
+                toast.success(`Import ${response.data.success} records`);
                 onClose();
             }
         } catch (e: any) {
@@ -104,7 +136,7 @@ export default function CategoryImportModal({onClose}: Props) {
                 <button
                     onClick={handleImport}
                     disabled={loading}
-                    className="p-3 rounded-lg bg-purple-500/20 border border-purple-400/40 text-purple-300 hover:shadow-[0_0_15px_rgba(168,85,247,0.6)] hover:cursor-pointer"
+                    className="p-3 rounded-lg bg-cyan-500/10 border border-cyan-400/30 text-cyan-300 hover:shadow-[0_0_15px_rgba(34,211,238,0.18)] hover:cursor-pointer"
                 >
                     {loading ? "Importing..." : "Import"}
                 </button>

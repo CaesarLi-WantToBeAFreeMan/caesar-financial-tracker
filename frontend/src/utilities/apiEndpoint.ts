@@ -2,8 +2,7 @@ export const BASE_URL = "http://localhost:1989/api/alpha.1.0";
 
 const profile = "/profiles";
 const category = "/categories";
-const income = "/incomes";
-const expense = "/expenses";
+const record = "/records";
 
 export const API_ENDPOINTS = {
     //profiles
@@ -14,24 +13,17 @@ export const API_ENDPOINTS = {
     //categories
     CREATE_CATEGORY: `${category}`,
     READ_CATEGORIES: `${category}`,
+    FETCH_CATEGORY: `${category}/{id}`,
     UPDATE_CATEGORY: `${category}/{id}`,
     DELETE_CATEGORY: `${category}/{id}`,
     IMPORT_CATEGORIES: `${category}/import`,
     EXPORT_CATEGORIES: `${category}/export/{type}`,
 
-    //incomes
-    CREATE_INCOME: `${income}`,
-    READ_INCOMES: `${income}`,
-    UPDATE_INCOME: `${income}/{id}`,
-    DELETE_INCOME: `${income}/{id}`,
-    IMPORT_INCOMES: `${income}/import`,
-    EXPORT_INCOMES: `${income}/export/{type}`,
-
-    //expenses
-    CREATE_EXPENSE: `${expense}`,
-    READ_EXPENSES: `${expense}`,
-    UPDATE_EXPENSE: `${expense}/{id}`,
-    DELETE_EXPENSE: `${expense}/{id}`,
-    IMPORT_EXPENSES: `${expense}/import`,
-    EXPORT_EXPENSES: `${expense}/export/{type}`
+    //records
+    CREATE_RECORD: `${record}`,
+    READ_RECORDS: `${record}`,
+    UPDATE_RECORD: `${record}/{id}`,
+    DELETE_RECORD: `${record}/{id}`,
+    IMPORT_RECORDS: `${record}/import`,
+    EXPORT_RECORDS: `${record}/export/{type}`
 };

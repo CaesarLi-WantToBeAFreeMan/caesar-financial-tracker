@@ -87,6 +87,11 @@ public class CategoryService {
         return categoryRepository.search(profileId, typeName, name, pageable).map(this::toResponse);
     }
 
+    public CategoryResponse fetch(Long id){
+        return toResponse(categoryRepository.findByIdAndProfileId(id, profileService.getCurrentProfile().getId())
+            .orElseThrow(() -> new CategoryNotFoundException("id = " + id)));
+    }
+
     public CategoryResponse update(Long id, CategoryRequest request) {
         CategoryEntity entity = categoryRepository.findByIdAndProfileId(id, profileService.getCurrentProfile().getId())
                                     .orElseThrow(() -> new CategoryNotFoundException(request.name()));

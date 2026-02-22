@@ -1,6 +1,6 @@
 import React, {useContext, type ReactNode} from "react";
 import {UserContext} from "../context/UserContext";
-import {Gauge, User, Tag, BanknoteArrowUp, BanknoteArrowDown, Settings, Funnel} from "lucide-react";
+import {Gauge, User, Tag, Banknote, Settings, Funnel} from "lucide-react";
 import {useNavigate} from "react-router-dom";
 
 interface MenuDataType {
@@ -17,8 +17,7 @@ interface SidebarPropsType {
 const menuData: MenuDataType[] = [
     {label: "Dashboard", icon: <Gauge />, path: "/dashboard"},
     {label: "Category", icon: <Tag />, path: "/category"},
-    {label: "Income", icon: <BanknoteArrowUp />, path: "/income"},
-    {label: "Expense", icon: <BanknoteArrowDown />, path: "/expense"},
+    {label: "Record", icon: <Banknote />, path: "/record"},
     {label: "Filters", icon: <Funnel />, path: "/filter"},
     {label: "Settings", icon: <Settings />, path: "/settings"}
 ];

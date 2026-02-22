@@ -34,7 +34,7 @@ public class RecordController {
          @RequestParam(required = false) BigDecimal priceHigh, @RequestParam(defaultValue = "0") int page,
          @RequestParam(defaultValue = "30") int size) {
         return ResponseEntity.ok(
-            recordService.read(order, keyword, type, categoryId, dateStart, dateEnd, priceLow, priceHigh, page, size));
+            recordService.read(order, type, keyword, categoryId, dateStart, dateEnd, priceLow, priceHigh, page, size));
     }
 
     @PutMapping("/{id}")

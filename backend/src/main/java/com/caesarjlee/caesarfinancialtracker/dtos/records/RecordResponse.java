@@ -13,6 +13,6 @@ public record RecordResponse(
     String description,
     LocalDateTime createdAt,
     LocalDateTime updatedAt,
-    String categoryName
+    Long categoryId
 ) {
 }
