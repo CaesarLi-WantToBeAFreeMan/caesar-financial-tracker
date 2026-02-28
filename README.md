@@ -109,12 +109,13 @@ This project is licensed under the [`MIT` License](./LICENSE)
 
 ## Improvements To DO List
 
-[ ] `cim#1`: support `oauth2` login
-[ ] `cim#2`: support dark/light toggle
-[ ] `cim#3`: support `i18n`
-[ ] `cim#4`: support custom date/price format rules
-[ ] `cim#5`: track records from third party apps (`Paypal`/`credit card`/`debit card`...)
-[ ] `cim#6`: use email to activate account
-[ ] `cim#7`: report to email
-[ ] `cim#8`: use `cloudflare` to accelerate/secure web
-[ ] `cim#9`: use `CI/CD` to test automatically
+- [ ] `cim#1`: support `oauth2` login
+- [ ] `cim#2`: support dark/light toggle
+- [ ] `cim#3`: support `i18n`
+- [ ] `cim#4`: support custom date/price format rules
+- [ ] `cim#5`: track records from third party apps (`Paypal`/`credit card`/`debit card`...)
+- [ ] `cim#6`: use email to activate account
+- [ ] `cim#7`: report to email
+- [ ] `cim#8`: use `cloudflare` to accelerate/secure web
+- [ ] `cim#9`: use `CI/CD` to test automatically
+- [ ] `cim#10`: use `react native` to build `Android` & `iOS` apps
