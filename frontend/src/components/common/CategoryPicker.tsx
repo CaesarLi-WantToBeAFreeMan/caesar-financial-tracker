@@ -29,30 +29,25 @@ export default function CategoryPicker({selectedId, type, onSelect, disableAll}:
         return () => document.removeEventListener("mousedown", handler);
     }, []);
 
-    // Fetch the specific category details to display Name/Icon correctly
     useEffect(() => {
         if (!selectedId) {
             setSelectedCategory(null);
             return;
         }
-        // Check if it's already in the current loaded page
         const found = page?.content.find(c => c.id === selectedId);
-        if (found) {
-            setSelectedCategory(found);
-        } else {
-            // Fetch from API if not in current list
+        if (found) setSelectedCategory(found);
+        else
             axiosConfig
                 .get(API_ENDPOINTS.FETCH_CATEGORY.replace("{id}", String(selectedId)))
                 .then(res => setSelectedCategory(res.data))
                 .catch(() => setSelectedCategory(null));
-        }
     }, [selectedId, page?.content]);
 
     const fetchCategories = async () => {
         setLoading(true);
         try {
             const response = await axiosConfig.get(API_ENDPOINTS.READ_CATEGORIES, {
-                params: {type: type, page: pageIndex, size: 5}
+                params: {type: type, page: pageIndex, size: 4}
             });
             setPage({
                 content: response.data.content,
@@ -79,32 +74,29 @@ export default function CategoryPicker({selectedId, type, onSelect, disableAll}:
     return (
         <div className="relative flex-1" ref={containerRef}>
             <button
-                type="button"
                 onClick={() => setOpen(!open)}
-                className="flex h-full w-full items-center gap-3 rounded-lg border border-cyan-400/30 bg-black/40 px-3 py-2 text-cyan-200 transition hover:border-cyan-400/60 hover:shadow-[0_0_10px_rgba(34,211,238,0.2)] hover:cursor-pointer"
+                className="flex w-full items-center gap-3 rounded-lg border border-cyan-400/30 bg-black/40 px-3 py-1 text-cyan-200 text-xs transition hover:border-cyan-400/60 hover:shadow-[0_0_10px_rgba(34,211,238,0.2)] hover:cursor-pointer"
             >
-                <div className="flex items-center justify-center w-5">
-                    {selectedId && selectedCategory ? (
-                        <RenderIcon
-                            icon={selectedCategory.icon}
-                            name={selectedCategory.name}
-                            imageSize="h-4 w-4"
-                            charSize="text-xs"
-                            boxSize={18}
-                        />
-                    ) : (
-                        <Box size={18} className="text-cyan-400/70" />
-                    )}
-                </div>
+                {selectedId && selectedCategory ? (
+                    <RenderIcon
+                        icon={selectedCategory.icon}
+                        name={selectedCategory.name}
+                        imageSize="h-4 w-4"
+                        charSize="text-xs"
+                        boxSize={12}
+                    />
+                ) : (
+                    <Box size={12} className="text-cyan-400/70" />
+                )}
                 <span className="truncate text-sm font-medium">
                     {selectedId ? selectedCategory?.name || "Loading..." : "All categories"}
                 </span>
             </button>
 
             {open && (
-                <div className="absolute left-0 z-50 mt-2 w-60 rounded-xl border border-cyan-400/30 bg-[#0b0f1a] p-3 shadow-2xl">
-                    <div className="flex items-center justify-between mb-2 border-b border-cyan-400/10 pb-2">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-cyan-400/50">
+                <div className="absolute left-1/2 -translate-x-1/2 z-10 mt-3 w-50 rounded-xl border border-cyan-400/30 bg-[#0b0f1a] p-3 shadow-2xl">
+                    <div className="flex items-center justify-between mb-1 border-b border-cyan-400/10 pb-1">
+                        <span className="text-xs font-mono font-semibold uppercase truncate text-cyan-400/50">
                             Select Category
                         </span>
                         <button
@@ -112,11 +104,11 @@ export default function CategoryPicker({selectedId, type, onSelect, disableAll}:
                             onClick={() => setOpen(false)}
                             className="text-red-600 hover:text-red-400 transition cursor-pointer"
                         >
-                            <XCircle size={18} />
+                            <XCircle size={15} />
                         </button>
                     </div>
 
-                    <div className="max-h-60 overflow-y-auto space-y-1 mb-3 pr-1">
+                    <div className="mb-1">
                         {!disableAll && (
                             <button
                                 type="button"
@@ -124,9 +116,10 @@ export default function CategoryPicker({selectedId, type, onSelect, disableAll}:
                                     onSelect(null);
                                     setOpen(false);
                                 }}
-                                className={`flex items-center gap-3 w-full text-left p-2 rounded text-xs transition border ${selectedId === null ? "bg-cyan-500/20 text-cyan-100 border-cyan-400/40" : "hover:bg-cyan-400/10 text-cyan-400/70 border-transparent cursor-pointer"}`}
+                                className={`flex items-center gap-3 w-full text-left m-1 p-2 rounded-xl text-xs transition duration-300 hover:cursor-pointer text-cyan-600 ${selectedId === null ? "bg-cyan-400/30 font-bold" : "hover:bg-cyan-400/30"}`}
                             >
-                                <Box size={14} /> All Categories
+                                <RenderIcon icon={null} name="all" boxSize={14} />
+                                <span>All Categories</span>
                             </button>
                         )}
 
@@ -135,26 +128,26 @@ export default function CategoryPicker({selectedId, type, onSelect, disableAll}:
                                 <LoaderCircle className="animate-spin text-cyan-400" size={20} />
                             </div>
                         ) : page?.content.length ? (
-                            page.content.map(cat => (
+                            page.content.map(category => (
                                 <button
-                                    key={cat.id}
+                                    key={category.id}
                                     type="button"
                                     onClick={() => {
-                                        onSelect(cat.id);
+                                        onSelect(category.id);
                                         setOpen(false);
                                     }}
-                                    className={`flex items-center gap-3 w-full text-left p-2 rounded text-xs transition cursor-pointer ${selectedId === cat.id ? "bg-cyan-500 text-black font-bold" : "hover:bg-cyan-400/10 text-cyan-200"}`}
+                                    className={`flex items-center gap-3 w-full text-left m-1 p-2 rounded-xl text-xs transition duration-300 hover:cursor-pointer text-cyan-600 ${selectedId === category.id ? "bg-cyan-400/30 font-bold" : "hover:bg-cyan-400/30"}`}
                                 >
                                     <div className="w-5 flex justify-center">
                                         <RenderIcon
-                                            icon={cat.icon}
-                                            name={cat.name}
+                                            icon={category.icon}
+                                            name={category.name}
                                             imageSize="h-4 w-4"
-                                            charSize="text-[10px]"
+                                            charSize="text-sm"
                                             boxSize={14}
                                         />
                                     </div>
-                                    <span className="truncate">{cat.name}</span>
+                                    <span className="truncate">{category.name}</span>
                                 </button>
                             ))
                         ) : (
@@ -162,7 +155,7 @@ export default function CategoryPicker({selectedId, type, onSelect, disableAll}:
                         )}
                     </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-cyan-400/10">
+                    <div className="flex items-center justify-between pt-1 border-t border-cyan-400/10">
                         <button
                             disabled={!page || page.first || loading}
                             onClick={() => setPageIndex(p => p - 1)}
@@ -170,7 +163,7 @@ export default function CategoryPicker({selectedId, type, onSelect, disableAll}:
                         >
                             <ChevronLeft size={18} />
                         </button>
-                        <span className="text-[10px] font-mono text-cyan-400/50">
+                        <span className="text-xs font-mono font-semibold text-cyan-400/50">
                             {page ? page.number + 1 : 1} / {page?.totalPages || 1}
                         </span>
                         <button

@@ -2,22 +2,16 @@ import {useEffect, useState} from "react";
 import Dashboard from "../components/Dashboard";
 import {useUser} from "../hooks/useUser";
 import HeaderBar from "../components/common/HeaderBar";
-import RecordFilterBar from "../components/records/RecordFilterBar";
-import type {RecordFilter} from "../types/records/RecordFilter";
+import type {RecordFilter, RecordPage, RecordData} from "../types/RecordTypes";
 import SearchBar from "../components/common/SearchBar";
 import {LoaderCircle} from "lucide-react";
-import type {RecordPage} from "../types/records/RecordPage";
-import type {RecordData} from "../types/records/RecordData";
 import Pagination from "../components/common/Pagination";
 import ItemList from "../components/common/ItemList";
 import axiosConfig from "../utilities/AxiosUtility";
 import {API_ENDPOINTS} from "../utilities/apiEndpoint";
 import toast from "react-hot-toast";
 import Modal from "../components/common/Modal";
-import AddRecordForm from "../components/records/AddRecordForm";
-import EditRecordForm from "../components/records/EditRecordForm";
-import DeleteRecordConfirm from "../components/records/DeleteRecordConfirm";
-import ImportRecordForm from "../components/records/ImportRecordForm";
+import {Create, Update, Delete, Filter, Import} from "../components/Records";
 
 export default function Record() {
     useUser();
@@ -141,7 +135,7 @@ export default function Record() {
                     setOpenCreateModal={setOpenCreateModal}
                 />
 
-                <RecordFilterBar filter={filter} onChange={updateFilter} />
+                <Filter filter={filter} onChange={updateFilter} />
 
                 <SearchBar keyword={keyword} setKeyword={setKeyword} placeholder="Search Records..." />
 
@@ -176,15 +170,15 @@ export default function Record() {
                 )}
 
                 <Modal isOpen={openCreateModal} onClose={() => setOpenCreateModal(false)} title="Add Record">
-                    <AddRecordForm onAddRecord={createRecord} />
+                    <Create onAddRecord={createRecord} />
                 </Modal>
 
                 <Modal isOpen={openUpdateModal} onClose={() => setOpenUpdateModal(false)} title="Update Record">
-                    <EditRecordForm record={selectedRecord!} onUpdateRecord={updateRecord} />
+                    <Update record={selectedRecord!} onUpdateRecord={updateRecord} />
                 </Modal>
 
                 <Modal isOpen={openDeleteModal} onClose={() => setOpenDeleteModal(false)} title="Delete Record">
-                    <DeleteRecordConfirm
+                    <Delete
                         record={selectedRecord!}
                         onConfirm={deleteRecord}
                         onCancel={() => setOpenDeleteModal(false)}
@@ -192,7 +186,7 @@ export default function Record() {
                 </Modal>
 
                 <Modal isOpen={openImportModal} onClose={() => setOpenImportModal(false)} title="Import Record">
-                    <ImportRecordForm
+                    <Import
                         onClose={() => {
                             setOpenImportModal(false);
                             readRecords();

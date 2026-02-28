@@ -2,7 +2,7 @@ import {BrowserRouter, Navigate, Route, Routes} from "react-router-dom";
 import "./app.css";
 import Home from "./pages/Home";
 import Category from "./pages/Category";
-import Filter from "./pages/Filter";
+import Summary from "./pages/Summary";
 import Record from "./pages/Record";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -25,7 +25,7 @@ export default function App() {
                         <Route path="/" element={<Root />} />
                         <Route path="/dashboard" element={<Home />} />
                         <Route path="/category" element={<Category />} />
-                        <Route path="/filter" element={<Filter />} />
+                        <Route path="/summary" element={<Summary />} />
                         <Route path="/record" element={<Record />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/signup" element={<Signup />} />

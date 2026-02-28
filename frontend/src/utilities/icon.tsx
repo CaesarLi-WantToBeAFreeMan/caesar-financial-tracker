@@ -1,5 +1,5 @@
 import {Box, LoaderCircle} from "lucide-react";
-import {useState} from "react";
+import React, {useState} from "react";
 
 export function isIconImage(icon?: string | null): boolean {
     if (!icon) return false;
@@ -12,7 +12,7 @@ export function getFirstChar(icon?: string | null): string {
 }
 
 interface RenderIconVariableType {
-    icon?: string | null;
+    icon?: string | React.ReactNode | null;
     name: string;
     loaderSize?: number;
     imageSize?: string;
@@ -23,35 +23,39 @@ interface RenderIconVariableType {
 
 export function RenderIcon({
     icon,
-    name,
+    name = "icon",
     loaderSize = 23,
     imageSize = "h-5 w-5",
     charSize = "text-lg",
     boxSize = 23,
     className = ""
 }: RenderIconVariableType) {
-    const [loading, setLoading] = useState(isIconImage(icon));
-    const [error, setError] = useState(false);
+    const isImage = typeof icon === "string" && isIconImage(icon);
+    const isLucide = React.isValidElement(icon);
+
+    const [loading, setLoading] = useState<boolean>(false);
+    const [error, setError] = useState<boolean>(false);
 
     return (
-        <div className={`flex items-center justify-center transition duration-300 ${className}`}>
-            {loading && <LoaderCircle size={loaderSize} className="animate-spin text-cyan-400" />}
-            {error && <Box size={boxSize} className="text-cyan-400" />}
-            {icon ? (
-                isIconImage(icon) ? (
+        <div className={`flex items-center justify-center relative transition duration-300 ${className}`}>
+            {isImage && !error ? (
+                <div className="relative flex items-center justify-center">
+                    {loading && <LoaderCircle size={loaderSize} className="absolute animate-spin text-cyan-400 z-10" />}
                     <img
-                        src={icon}
+                        src={icon as string}
                         alt={name}
                         onLoad={() => setLoading(false)}
                         onError={() => {
                             setLoading(false);
                             setError(true);
                         }}
-                        className={`${imageSize} object-contain transition duration-300 rounded-lg`}
+                        className={`${imageSize} object-contain transition duration-300 rounded-lg ${loading ? "opacity-0" : "opacity-100"}`}
                     />
-                ) : (
-                    <span className={`${charSize} font-mono leading-none text-cyan-400`}>{getFirstChar(icon)}</span>
-                )
+                </div>
+            ) : isLucide ? (
+                React.cloneElement(icon as React.ReactElement, {size: boxSize, className: "text-cyan-400"})
+            ) : typeof icon === "string" && icon.trim().length > 0 ? (
+                <span className={`${charSize} font-mono leading-none text-cyan-400`}>{getFirstChar(icon)}</span>
             ) : (
                 <Box size={boxSize} className="text-cyan-400" />
             )}

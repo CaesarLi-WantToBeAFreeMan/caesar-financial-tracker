@@ -25,8 +25,33 @@ public interface RecordRepository extends JpaRepository <RecordEntity, Long> {
             AND (:priceLow IS NULL OR r.price >= :priceLow)
             AND (:priceHigh IS NULL OR r.price <= :priceHigh)
     """)
-    Page<RecordEntity> search(@Param("profileId") Long profileId, @Param("keyword") String keyword, @Param("type") String type,
-                              @Param("categoryId") Long categoryId, @Param("dateStart") LocalDate dateStart,
-                              @Param("dateEnd") LocalDate dateEnd, @Param("priceLow") BigDecimal priceLow,
-                              @Param("priceHigh") BigDecimal priceHigh, Pageable pageable);
+    Page<RecordEntity> search(@Param("profileId") Long profileId,
+                              @Param("keyword") String keyword,
+                              @Param("type") String type,
+                              @Param("categoryId") Long categoryId,
+                              @Param("dateStart") LocalDate dateStart,
+                              @Param("dateEnd") LocalDate dateEnd,
+                              @Param("priceLow") BigDecimal priceLow,
+                              @Param("priceHigh") BigDecimal priceHigh,
+                              Pageable pageable);
+    @Query("""
+        SELECT r
+        FROM RecordEntity r
+        WHERE r.profile.id = :profileId
+            AND (:type IS NULL OR :type = 'all' OR LOWER(r.category.type) = LOWER(:type))
+            AND (:dateStart IS NULL OR r.date >= :dateStart)
+            AND (:dateEnd IS NULL OR r.date <= :dateEnd)
+            AND (:priceLow IS NULL OR r.price >= :priceLow)
+            AND (:priceHigh IS NULL OR r.price <= :priceHigh)
+            AND (:categories IS NULL OR r.category.id IN :categories)
+            AND (:keyword IS NULL OR LOWER(r.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
+    """)
+    List <RecordEntity> searchAll(@Param("profileId") Long profileId,
+                                  @Param("type") String type,
+                                  @Param("dateStart") LocalDate dateStart,
+                                  @Param("dateEnd") LocalDate dateEnd,
+                                  @Param("priceLow") BigDecimal priceLow,
+                                  @Param("priceHigh") BigDecimal priceHigh,
+                                  @Param("categories") List <Long> categories,
+                                  @Param("keyword") String keyword);
 }

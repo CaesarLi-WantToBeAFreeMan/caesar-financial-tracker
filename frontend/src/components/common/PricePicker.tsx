@@ -52,14 +52,14 @@ export default function PricePicker({value, onChange, minPrice = 0, maxPrice = n
                     setOpen(true);
                     setPreview(value?.toString() || "");
                 }}
-                className="flex items-center gap-3 rounded-lg border border-cyan-400/30 bg-black/40 px-3 py-2 text-cyan-200 transition hover:border-cyan-400/60 hover:shadow-[0_0_10px_rgba(34,211,238,0.2)] hover:cursor-pointer"
+                className="flex items-center gap-3 rounded-lg border border-cyan-400/30 bg-black/40 px-3 py-2 text-cyan-200 text-xs transition hover:border-cyan-400/60 hover:shadow-[0_0_10px_rgba(34,211,238,0.2)] hover:cursor-pointer"
             >
-                <span className="font-mono text-sm">{priceFormat(value!)}</span>
-                <CircleDollarSign size={18} className="text-cyan-400/50" />
+                <span className="font-mono">{priceFormat(value!)}</span>
+                <CircleDollarSign size={12} className="text-cyan-400" />
             </button>
 
             {open && (
-                <div className="absolute right-0 z-50 mt-4 w-39 rounded-xl border border-cyan-400/30 bg-[#0b0f1a] p-3 shadow-2xl">
+                <div className="absolute left-1/2 -translate-x-1/2 z-50 mt-4 w-39 rounded-xl border border-cyan-400/30 bg-[#0b0f1a] p-3 shadow-2xl">
                     <div className="flex justify-between items-center mb-2">
                         <div className="w-4" />
                         <div className={`text-sm font-mono font-bold ${isInvalid ? "text-red-500" : "text-cyan-400"}`}>

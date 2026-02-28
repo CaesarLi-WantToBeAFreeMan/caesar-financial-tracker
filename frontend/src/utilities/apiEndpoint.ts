@@ -22,6 +22,7 @@ export const API_ENDPOINTS = {
     //records
     CREATE_RECORD: `${record}`,
     READ_RECORDS: `${record}`,
+    READ_ALL_RECORDS: `${record}/all`,
     UPDATE_RECORD: `${record}/{id}`,
     DELETE_RECORD: `${record}/{id}`,
     IMPORT_RECORDS: `${record}/import`,

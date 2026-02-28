@@ -1,4 +1,3 @@
-import {LoaderCircle} from "lucide-react";
 import Dashboard from "../components/Dashboard";
 import {useUser} from "../hooks/useUser";
 import ItemList from "../components/common/ItemList";
@@ -8,27 +7,22 @@ import axiosConfig from "../utilities/AxiosUtility";
 import {API_ENDPOINTS} from "../utilities/apiEndpoint";
 import toast from "react-hot-toast";
 import Modal from "../components/common/Modal";
-import AddCategoryForm from "../components/categories/AddCategoryForm";
-import type {CategoryData} from "../types/CategoryData";
-import EditCategoryForm from "../components/categories/EditCategoryForm";
-import DeleteCategoryConfirm from "../components/categories/DeleteCategoryConfirm";
-import CategoryFilterBar from "../components/categories/CategoryFilterBar";
-import type {CategoryPage} from "../types/CategoryPage";
-import CategoryImportModal from "../components/categories/CategoryImportModal";
-import HeaderBar from "../components/common/HeaderBar";
+import type {CategoryData, CategoryPage, CategoryFilter} from "../types/CategoryTypes";
 import SearchBar from "../components/common/SearchBar";
-import type {CategoryType} from "../types/CategoryType";
-import type {CategoryOrder} from "../types/CategoryOrder";
+import {LoaderCircle} from "lucide-react";
+import {Create, Update, Delete, Filter, Import} from "../components/Categories";
+import HeaderBar from "../components/common/HeaderBar";
 
 export default function Category() {
     useUser();
 
+    const updateFilter = <K extends keyof CategoryFilter>(key: K, value: CategoryFilter[K]) =>
+        setFilter(previous => ({...previous, [key]: value}));
+
     const [page, setPage] = useState<CategoryPage | null>(null);
     const [loading, setLoading] = useState(false);
-    const [type, setType] = useState<CategoryType>("all");
-    const [order, setOrder] = useState<CategoryOrder>("CREATED_DESCENDING");
+    const [filter, setFilter] = useState<CategoryFilter>({type: "all", order: "CREATED_ASCENDING", size: 30});
     const [index, setIndex] = useState<number>(0);
-    const [size, setSize] = useState<number>(30);
 
     //search
     const [keyword, setKeyword] = useState("");
@@ -56,7 +50,13 @@ export default function Category() {
         setLoading(true);
         try {
             const response = await axiosConfig.get(API_ENDPOINTS.READ_CATEGORIES, {
-                params: {type: type, name: keyword.trim() || undefined, order: order, page: index, size: size}
+                params: {
+                    type: filter.type,
+                    name: keyword.trim() || undefined,
+                    order: filter.order,
+                    page: index,
+                    size: filter.size
+                }
             });
             setPage({
                 content: response.data.content,
@@ -101,7 +101,7 @@ export default function Category() {
 
     useEffect(() => {
         readCategories();
-    }, [type, order, index, size, keyword]);
+    }, [filter, index, keyword]);
 
     return (
         <Dashboard activeRoute="Category">
@@ -112,23 +112,7 @@ export default function Category() {
                     setOpenCreateModal={setOpenCreateModal}
                 />
 
-                <CategoryFilterBar
-                    type={type}
-                    order={order}
-                    size={size}
-                    onTypeChange={t => {
-                        setType(t);
-                        setIndex(0);
-                    }}
-                    onOrderChange={o => {
-                        setOrder(o);
-                        setIndex(0);
-                    }}
-                    onSizeChange={s => {
-                        setSize(s);
-                        setIndex(0);
-                    }}
-                />
+                <Filter filter={filter} onChange={updateFilter} />
 
                 <SearchBar keyword={keyword} setKeyword={setKeyword} placeholder="Search categories..." />
 
@@ -162,11 +146,11 @@ export default function Category() {
                 )}
 
                 <Modal isOpen={openCreateModal} onClose={() => setOpenCreateModal(false)} title="Add Category">
-                    <AddCategoryForm onAddCategory={createCategory} />
+                    <Create onAddCategory={createCategory} />
                 </Modal>
 
                 <Modal isOpen={openImportModal} onClose={() => setOpenImportModal(false)} title="Import Categories">
-                    <CategoryImportModal
+                    <Import
                         onClose={() => {
                             setOpenImportModal(false);
                             readCategories();
@@ -176,14 +160,14 @@ export default function Category() {
 
                 {selectedCategory && (
                     <Modal isOpen={openUpdateModal} onClose={() => setOpenUpdateModal(false)} title="Update Category">
-                        <EditCategoryForm category={selectedCategory} onUpdateCategory={updateCategory} />
+                        <Update category={selectedCategory} onUpdateCategory={updateCategory} />
                     </Modal>
                 )}
 
                 {selectedCategory && (
                     <Modal isOpen={openDeleteModal} onClose={() => setOpenDeleteModal(false)} title="Delete Category">
-                        <DeleteCategoryConfirm
-                            record={selectedCategory}
+                        <Delete
+                            category={selectedCategory}
                             onCancel={() => setOpenDeleteModal(false)}
                             onConfirm={deleteCategory}
                         />

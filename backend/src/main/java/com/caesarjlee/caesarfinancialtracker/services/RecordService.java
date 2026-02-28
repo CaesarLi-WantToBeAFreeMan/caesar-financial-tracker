@@ -17,6 +17,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -91,6 +93,14 @@ public class RecordService {
             .search(profileService.getCurrentProfile().getId(), keyword, type, categoryId, dateStart, dateEnd, priceLow,
                     priceHigh, validPage(order, page, size))
             .map(this::toResponse);
+    }
+
+    public List <RecordResponse> readAll(String type, LocalDate dateStart, LocalDate dateEnd, BigDecimal priceLow, BigDecimal priceHigh, List <Long> categories, String keyword){
+        validate(dateStart, dateEnd, priceLow, priceHigh);
+        return recordRepository.searchAll(profileService.getCurrentProfile().getId(),type, dateStart, dateEnd, priceLow, priceHigh, categories, keyword)
+            .stream()
+            .map(this::toResponse)
+            .collect(Collectors.toList());
     }
 
     public RecordResponse update(Long id, RecordRequest request) {

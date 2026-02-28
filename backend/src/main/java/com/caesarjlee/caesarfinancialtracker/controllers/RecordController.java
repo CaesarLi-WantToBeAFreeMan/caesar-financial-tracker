@@ -12,6 +12,8 @@ import org.springframework.web.multipart.MultipartFile;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -23,6 +25,17 @@ public class RecordController {
     @PostMapping
     public ResponseEntity<RecordResponse> create(@RequestBody @Valid RecordRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(recordService.create(request));
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity <List <RecordResponse>>readAll(@RequestParam(required = false) String type,
+                                                         @RequestParam(required = false) LocalDate dateStart,
+                                                         @RequestParam(required = false) LocalDate dateEnd,
+                                                         @RequestParam(required = false) BigDecimal priceLow,
+                                                         @RequestParam(required = false) BigDecimal priceHigh,
+                                                         @RequestParam(required = false) List <Long> categories,
+                                                         @RequestParam(required = false) String keyword){
+        return ResponseEntity.ok(recordService.readAll(type, dateStart, dateEnd, priceLow, priceHigh, categories, keyword));
     }
 
     @GetMapping

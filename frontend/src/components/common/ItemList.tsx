@@ -53,8 +53,8 @@ export default function ItemList({title, items, totalElements, onEdit, onDelete,
                 </span>
             </div>
 
-            {items.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-cyan-500/10 rounded-xl bg-cyan-500/[0.02]">
+            {!items.length ? (
+                <div className="flex flex-col items-center justify-center py-12 border-3 border-dashed border-cyan-500/10 rounded-xl bg-cyan-500/[0.02]">
                     <Box size={50} className="text-cyan-500/20 mb-3" />
                     <p className="text-sm text-cyan-400/50 font-medium">No items found</p>
                     <p className="text-xs text-cyan-500/30">Try importing a file or adding an item</p>

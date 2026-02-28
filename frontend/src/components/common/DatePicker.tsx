@@ -30,52 +30,56 @@ export default function DatePicker({value, onChange, minDate, maxDate}: Props) {
     }, []);
 
     const isDisabled = (iso: string) => iso > today || (minDate && iso < minDate) || (maxDate && iso > maxDate);
-    const isPrevDisabled = month.getFullYear() <= 1970 && month.getMonth() <= 0;
+    const isPrevDisabled =
+        (month.getFullYear() <= 1970 && month.getMonth() <= 0) || (minDate && toISO(month) < minDate);
     const isNextDisabled = toISO(new Date(month.getFullYear(), month.getMonth() + 1, 1)) > today;
     const isFutureMonth = (m: number, y: number) => {
-        const d = new Date(y, m, 1);
         const now = new Date();
-        return d > new Date(now.getFullYear(), now.getMonth(), 1);
+        return new Date(y, m, 1) > new Date(now.getFullYear(), now.getMonth(), 1);
     };
 
-    const handleDateSelect = (dayNum: number) => {
-        const d = new Date(month.getFullYear(), month.getMonth(), dayNum);
-        onChange(toISO(d));
+    const handleDateSelect = (day: number) => {
+        onChange(toISO(new Date(month.getFullYear(), month.getMonth(), day)));
         setOpen(false);
     };
 
     const years = Array.from({length: new Date().getFullYear() - 1970 + 1}, (_, i) => 1970 + i).reverse();
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
     return (
         <div className="relative" ref={containerRef}>
             <button
                 onClick={() => setOpen(!open)}
-                className="flex items-center gap-3 rounded-lg border border-cyan-400/30 bg-black/40 px-3 py-2 text-cyan-200 hover:border-cyan-400/60 hover:shadow-[0_0_10px_rgba(34,211,238,0.2)] hover:cursor-pointer transition-all"
+                className="flex items-center gap-3 rounded-lg border border-cyan-400/30 bg-black/40 px-3 py-1 text-cyan-200 text-xs hover:border-cyan-400/60 hover:shadow-[0_0_10px_rgba(34,211,238,0.2)] hover:cursor-pointer"
             >
-                {value} <Calendar size={18} />
+                {value}
+                <Calendar size={12} />
             </button>
 
             {open && (
-                <div className="absolute z-50 mt-3 w-50 rounded-xl border border-cyan-400/30 bg-[#0b0f1a] p-3 shadow-[0_0_20px_rgba(0,0,0,0.8)] text-cyan-200">
-                    <div className="flex items-center justify-between mb-4 border-b border-cyan-400/10 pb-2">
+                <div className="absolute left-1/2 -translate-x-1/2 z-10 mt-3 w-50 rounded-xl border border-cyan-400/30 bg-[#0b0f1a] p-3 shadow-[0_0_20px_rgba(0,0,0,0.8)] text-cyan-200">
+                    <div className="flex items-center justify-between mb-3 border-b border-cyan-400/10 pb-1">
                         <button
-                            disabled={isPrevDisabled}
-                            onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}
+                            disabled={isPrevDisabled || view === "years"}
+                            onClick={() =>
+                                view === "days"
+                                    ? setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))
+                                    : setMonth(new Date(month.getFullYear() - 1, 0, 1))
+                            }
                             className="hover:text-cyan-400 hover:cursor-pointer transition disabled:opacity-10 disabled:cursor-not-allowed"
                         >
                             <ChevronLeft size={18} />
                         </button>
 
-                        <div className="flex gap-2 text-xs font-bold tracking-widest">
+                        <div className="flex gap-3 text-xs font-mono font-semibold truncate">
                             <button
-                                className="cursor-pointer hover:text-cyan-400 transition-colors"
+                                className="hover:text-cyan-400 hover:cursor-pointer transition"
                                 onClick={() => setView("months")}
                             >
-                                {months[month.getMonth()]}
+                                {monthNames[month.getMonth()]}
                             </button>
                             <button
-                                className="cursor-pointer hover:text-cyan-400 transition-colors"
+                                className="hover:text-cyan-400 hover:cursor-pointer transition"
                                 onClick={() => setView("years")}
                             >
                                 {month.getFullYear()}
@@ -87,23 +91,27 @@ export default function DatePicker({value, onChange, minDate, maxDate}: Props) {
                                     setOpen(false);
                                 }}
                                 title="Today"
-                                className="hover:text-cyan-400 transition cursor-pointer"
+                                className="hover:text-cyan-400 hover:cursor-pointer transition"
                             >
                                 <AlarmClock size={18} />
                             </button>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
                             <button
-                                disabled={isNextDisabled}
-                                onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}
+                                disabled={isNextDisabled || view === "years"}
+                                onClick={() =>
+                                    view === "days"
+                                        ? setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))
+                                        : setMonth(new Date(month.getFullYear() + 1, 0, 1))
+                                }
                                 className="hover:text-cyan-400 hover:cursor-pointer transition disabled:opacity-10 disabled:cursor-not-allowed"
                             >
                                 <ChevronRight size={18} />
                             </button>
                             <button
                                 onClick={() => setOpen(false)}
-                                className="text-red-600 hover:text-red-400 cursor-pointer transition"
+                                className="text-red-600 hover:text-red-400 hover:cursor-pointer transition"
                             >
                                 <XCircle size={18} />
                             </button>
@@ -111,10 +119,10 @@ export default function DatePicker({value, onChange, minDate, maxDate}: Props) {
                     </div>
 
                     {view === "days" && (
-                        <div className="grid grid-cols-7 gap-1 text-center text-[10px]">
-                            {["S", "M", "T", "W", "T", "F", "S"].map(d => (
-                                <div key={d} className="text-cyan-400/30 font-bold">
-                                    {d}
+                        <div className="grid grid-cols-7 gap-1 text-center text-xs">
+                            {["S", "M", "T", "W", "T", "F", "S"].map(dayOfWeekName => (
+                                <div key={dayOfWeekName} className="text-cyan-400 font-sans font-semibold">
+                                    {dayOfWeekName}
                                 </div>
                             ))}
                             {Array(month.getDay())
@@ -131,7 +139,7 @@ export default function DatePicker({value, onChange, minDate, maxDate}: Props) {
                                             toISO(new Date(month.getFullYear(), month.getMonth(), i + 2))
                                         )}
                                         onClick={() => handleDateSelect(i + 2)}
-                                        className="rounded p-1.5 transition bg-cyan-400/10 text-cyan-600 font-bold hover:bg-cyan-400/20 hover:cursor-pointer disabled:opacity-10 disabled:cursor-not-allowed"
+                                        className={`rounded-xl p-1 bg-cyan-400/10 text-cyan-600 font-mono font-light ${toISO(new Date(month.getFullYear(), month.getMonth(), i + 2)) === value ? "bg-cyan-400/30" : "hover:bg-cyan-400/30"} hover:cursor-pointer disabled:opacity-10 disabled:cursor-not-allowed transition`}
                                     >
                                         {i + 1}
                                     </button>
@@ -140,8 +148,8 @@ export default function DatePicker({value, onChange, minDate, maxDate}: Props) {
                     )}
 
                     {view === "months" && (
-                        <div className="grid grid-cols-3 gap-1 animate-in fade-in zoom-in duration-200">
-                            {months.map((m, i) => (
+                        <div className="grid grid-cols-3 gap-1">
+                            {monthNames.map((m, i) => (
                                 <button
                                     key={m}
                                     disabled={isFutureMonth(i, month.getFullYear())}
@@ -149,7 +157,7 @@ export default function DatePicker({value, onChange, minDate, maxDate}: Props) {
                                         setMonth(new Date(month.getFullYear(), i, 1));
                                         setView("days");
                                     }}
-                                    className="p-2 text-[10px] rounded border border-cyan-400/10 transition hover:bg-cyan-400/20 hover:border-cyan-400/40 hover:cursor-pointer disabled:opacity-10 disabled:cursor-not-allowed"
+                                    className={`p-1 text-xs rounded-xl bg-cyan-400/10 text-cyan-600 ${monthNames[month.getMonth()] === m ? "bg-cyan-400/30" : "hover:bg-cyan-400/30"} hover:cursor-pointer disabled:opacity-10 disabled:cursor-not-allowed`}
                                 >
                                     {m}
                                 </button>
@@ -158,7 +166,7 @@ export default function DatePicker({value, onChange, minDate, maxDate}: Props) {
                     )}
 
                     {view === "years" && (
-                        <div className="grid grid-cols-3 gap-1 max-h-40 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in duration-200">
+                        <div className="grid grid-cols-3 gap-1 max-h-39 overflow-y-scroll custom-scrollbar animate-in fade-in zoom-in duration-200 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-cyan-400/10 [&::-webkit-scrollbar-trumb]:bg-cyan-400 [&::-webkit-scrollbar-trumb]:shadow-[0_0_10px_rgba(34,211,238,0.2)] hover:[&::-webkit-scrollbar-thumb]:bg-cyan-400/30">
                             {years.map(y => (
                                 <button
                                     key={y}
@@ -166,7 +174,7 @@ export default function DatePicker({value, onChange, minDate, maxDate}: Props) {
                                         setMonth(new Date(y, month.getMonth(), 1));
                                         setView("days");
                                     }}
-                                    className="p-2 text-[10px] rounded border border-cyan-400/10 hover:bg-cyan-400/20 hover:border-cyan-400/40 transition hover:cursor-pointer"
+                                    className={`mb-1 p-1 text-xs rounded-xl font-mono font-light bg-cyan-400/10 text-cyan-600 ${month.getFullYear() === y ? "bg-cyan-400/30" : "hover:bg-cyan-400/30"} hover:cursor-pointer`}
                                 >
                                     {y}
                                 </button>
