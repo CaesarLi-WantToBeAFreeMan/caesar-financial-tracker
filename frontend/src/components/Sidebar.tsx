@@ -1,6 +1,6 @@
 import React, {useContext, type ReactNode} from "react";
 import {UserContext} from "../context/UserContext";
-import {Gauge, User, Tag, Banknote, Settings, ChartNoAxesCombined} from "lucide-react";
+import {User, Tag, Banknote, ChartNoAxesCombined, UserCog} from "lucide-react";
 import {useNavigate} from "react-router-dom";
 
 interface MenuDataType {
@@ -15,11 +15,10 @@ interface SidebarPropsType {
 }
 
 const menuData: MenuDataType[] = [
-    {label: "Dashboard", icon: <Gauge />, path: "/dashboard"},
+    {label: "Profile", icon: <UserCog />, path: "/profile"},
     {label: "Category", icon: <Tag />, path: "/category"},
     {label: "Record", icon: <Banknote />, path: "/record"},
-    {label: "Summary", icon: <ChartNoAxesCombined />, path: "/summary"},
-    {label: "Settings", icon: <Settings />, path: "/settings"}
+    {label: "Summary", icon: <ChartNoAxesCombined />, path: "/summary"}
 ];
 
 export default function Sidebar({setIsOpenSideMenu, activeRoute}: SidebarPropsType) {

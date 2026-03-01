@@ -39,7 +39,7 @@ export default function Login() {
                     createdAt: userData.created_at,
                     updatedAt: userData.updated_at
                 });
-                navigate("/dashboard");
+                navigate("/profile");
             }
         } catch (err: any) {
             toast.error(err?.response?.data?.message || "Login failed");
@@ -104,7 +104,6 @@ export default function Login() {
                                 </span>
                             )}
                             <button
-                                type="button"
                                 onClick={() => setShowPassword(p => !p)}
                                 className="absolute right-4 top-1/2 -translate-y-1/2 text-xl"
                             >

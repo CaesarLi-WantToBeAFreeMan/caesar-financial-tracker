@@ -1,6 +1,5 @@
 import {BrowserRouter, Navigate, Route, Routes} from "react-router-dom";
 import "./app.css";
-import Home from "./pages/Home";
 import Category from "./pages/Category";
 import Summary from "./pages/Summary";
 import Record from "./pages/Record";
@@ -8,7 +7,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import {Toaster} from "react-hot-toast";
 import {UserContextProvider} from "./context/UserContext";
-import Settings from "./pages/Settings";
+import Profile from "./pages/Profile";
 
 export default function App() {
     const Root = () => {
@@ -23,13 +22,12 @@ export default function App() {
                     <Routes>
                         {/*redirect to login*/}
                         <Route path="/" element={<Root />} />
-                        <Route path="/dashboard" element={<Home />} />
+                        <Route path="/profile" element={<Profile />} />
                         <Route path="/category" element={<Category />} />
                         <Route path="/summary" element={<Summary />} />
                         <Route path="/record" element={<Record />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/signup" element={<Signup />} />
-                        <Route path="/settings" element={<Settings />} />
                         <Route path="*" element={<Navigate to="/login" replace />} />
                     </Routes>
                 </BrowserRouter>

@@ -1,13 +1,10 @@
 package com.caesarjlee.caesarfinancialtracker.controllers;
 
-import com.caesarjlee.caesarfinancialtracker.dtos.LoginRequest;
-import com.caesarjlee.caesarfinancialtracker.dtos.LoginResponse;
-import com.caesarjlee.caesarfinancialtracker.dtos.RegisterRequest;
-import com.caesarjlee.caesarfinancialtracker.dtos.RegisterResponse;
+import com.caesarjlee.caesarfinancialtracker.dtos.*;
+import com.caesarjlee.caesarfinancialtracker.dtos.profiles.ProfileRequest;
 import com.caesarjlee.caesarfinancialtracker.services.ProfileService;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -29,8 +26,8 @@ public class ProfileController {
         return ResponseEntity.ok(profileService.login(request));
     }
 
-    @GetMapping
-    public ResponseEntity<RegisterResponse> read() {
-        return ResponseEntity.ok(profileService.getPublicProfileInfo());
+    @PutMapping
+    public ResponseEntity <RegisterResponse> update(@RequestBody @Valid ProfileRequest request){
+        return ResponseEntity.ok(profileService.update(request));
     }
 }
