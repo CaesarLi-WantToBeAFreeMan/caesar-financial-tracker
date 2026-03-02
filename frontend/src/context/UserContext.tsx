@@ -9,8 +9,6 @@ export interface User {
     lastName: string;
     email: string;
     profileImage: string | null;
-    createdAt: string;
-    updatedAt: string;
 }
 
 export interface UserContextType {
@@ -36,7 +34,7 @@ export const UserContextProvider = ({children}: {children: ReactNode}) => {
             return;
         }
         axiosConfig
-            .get(API_ENDPOINTS.GET_USER_INFO)
+            .get(API_ENDPOINTS.READ_PROFILE)
             .then(response => setUser(response.data))
             .catch(clearUser)
             .finally(() => setLoading(false));

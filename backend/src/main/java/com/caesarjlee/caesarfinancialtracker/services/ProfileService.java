@@ -55,6 +55,10 @@ public class ProfileService {
         return profileRepository.findByEmail(email).orElseThrow(() -> new ProfileNotFoundException(email));
     }
 
+    public RegisterResponse getPublicProfileInfo() {
+        return toRegisterResponse(getCurrentProfile());
+    }
+
     public LoginResponse login(LoginRequest request) {
         var profile = profileRepository.findByEmail(request.email())
                           .orElseThrow(() -> new ProfileNotFoundException(request.email()));

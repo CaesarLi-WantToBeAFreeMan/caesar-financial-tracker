@@ -9,6 +9,7 @@ export const API_ENDPOINTS = {
     REGISTER: `${profile}/register`,
     LOGIN: `${profile}/login`,
     UPDATE_PROFILE: `${profile}`,
+    READ_PROFILE: `${profile}`,
 
     //categories
     CREATE_CATEGORY: `${category}`,

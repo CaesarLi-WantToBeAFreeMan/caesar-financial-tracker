@@ -26,6 +26,11 @@ public class ProfileController {
         return ResponseEntity.ok(profileService.login(request));
     }
 
+    @GetMapping
+    public ResponseEntity<RegisterResponse> read() {
+        return ResponseEntity.ok(profileService.getPublicProfileInfo());
+    }
+
     @PutMapping
     public ResponseEntity <RegisterResponse> update(@RequestBody @Valid ProfileRequest request){
         return ResponseEntity.ok(profileService.update(request));

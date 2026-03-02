@@ -12,54 +12,78 @@ interface MenuDataType {
 interface SidebarPropsType {
     setIsOpenSideMenu?: React.Dispatch<React.SetStateAction<boolean>>;
     activeRoute: string;
+    isMobile: boolean;
 }
 
 const menuData: MenuDataType[] = [
-    {label: "Profile", icon: <UserCog />, path: "/profile"},
-    {label: "Category", icon: <Tag />, path: "/category"},
-    {label: "Record", icon: <Banknote />, path: "/record"},
-    {label: "Summary", icon: <ChartNoAxesCombined />, path: "/summary"}
+    {label: "Profile", icon: <UserCog size={21} />, path: "/profile"},
+    {label: "Category", icon: <Tag size={21} />, path: "/category"},
+    {label: "Record", icon: <Banknote size={21} />, path: "/record"},
+    {label: "Summary", icon: <ChartNoAxesCombined size={21} />, path: "/summary"}
 ];
 
-export default function Sidebar({setIsOpenSideMenu, activeRoute}: SidebarPropsType) {
+export default function Sidebar({setIsOpenSideMenu, activeRoute, isMobile}: SidebarPropsType) {
     const context = useContext(UserContext);
-    if (!context) return null;
-    const {user} = context;
     const navigate = useNavigate();
 
+    if (!context) return null;
+    const {user} = context;
+
     return (
-        <aside className="fixed top-23 w-full lg:w-72 h-[calc(100vh-100px)] bg-[#1c1c3d] border-r-2 border-[#00b3ff] rounded-xl p-5 min-[1080px]:static">
-            {/*user icon and name*/}
+        <aside
+            className={`${isMobile ? "w-full h-full" : "hidden lg:flex flex-col w-64 sticky top-18 h-[calc(100vh-100px)]"} p-3 transition duration-300`}
+        >
             {user && (
-                <div className="flex flex-col items-center mb-5">
-                    <User className="w-18 h-18 text-[#9900ff]" />
-                    <p className="mt-3 text-[#0033ff] font-semibold">
-                        {user.firstName} {user.lastName}
-                    </p>
+                <div className="flex flex-col items-center p-5 bg-black/40 rounded-2xl mb-8 border border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.1)]">
+                    <div className="w-20 h-20 rounded-full bg-cyan-950 flex items-center justify-center border-2 border-magenta-500/50 mb-4 overflow-hidden shadow-[0_0_10px_rgba(255,98,229,0.3)]">
+                        {user.profileImage ? (
+                            <img src={user.profileImage} alt="profile" className="w-full h-full object-cover" />
+                        ) : (
+                            <User className="w-10 h-10 text-magenta-400" />
+                        )}
+                    </div>
+
+                    <div className="w-full min-w-0 text-center">
+                        <p className="text-cyan-400 font-bold text-lg truncate px-2">
+                            {user.firstName} {user.lastName}
+                        </p>
+                        <p className="text-xs text-slate-500 truncate font-mono">{user.email}</p>
+                    </div>
                 </div>
             )}
 
-            {/*menu*/}
-            {menuData.map((item: MenuDataType, index: number) => (
-                <>
-                    <button
-                        key={index}
-                        className="w-full flex items-center justify-start gap-3 py-1.5 px-3 text-left hover:bg-[#8500f3] cursor-pointer rounded-xl transition"
-                        onClick={() => {
-                            if (innerWidth) setIsOpenSideMenu?.(false);
-                            navigate(item.path);
-                        }}
-                    >
-                        <div className="w-9 h-9 text-[#00b3ff] flex items-center justify-start">{item.icon}</div>
-                        <p
-                            className={`w-full text-base text-slate-200 truncate px-3 rounded-xl transition ${activeRoute === item.label ? "bg-[#00b3ff]" : ""}`}
+            <nav className="flex-1 space-y-3">
+                {menuData.map((item: MenuDataType) => {
+                    const isActive = activeRoute === item.label;
+                    return (
+                        <button
+                            key={item.path}
+                            className={`
+                                w-full flex items-center gap-4 p-3.5 rounded-xl transition-all duration-300 group cursor-pointer ${isActive ? "bg-cyan-500/20 text-cyan-400 border border-cyan-400/50 shadow-[0_0_15px_rgba(34,211,238,0.2)]" : "text-slate-400 hover:bg-white/5 hover:text-cyan-300 border border-transparent"}`}
+                            onClick={() => {
+                                setIsOpenSideMenu?.(false);
+                                navigate(item.path);
+                            }}
                         >
-                            {item.label}
-                        </p>
-                    </button>
-                    <hr className="mx-3 my-1 text-[#0a001f]" />
-                </>
-            ))}
+                            <div
+                                className={`transition-transform duration-300 group-hover:scale-120 ${isActive ? "text-cyan-400" : "text-cyan-600"}`}
+                            >
+                                {item.icon}
+                            </div>
+
+                            <span
+                                className={`text-sm font-medium tracking-wide transition-colors ${isActive ? "text-cyan-300 font-bold" : "group-hover:text-cyan-200"}`}
+                            >
+                                {item.label}
+                            </span>
+
+                            {isActive && (
+                                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]" />
+                            )}
+                        </button>
+                    );
+                })}
+            </nav>
         </aside>
     );
 }
