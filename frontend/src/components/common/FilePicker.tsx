@@ -31,7 +31,10 @@ export function FilePicker({file, onChange, onClear}: Props) {
                 {file && (
                     <button
                         type="button"
-                        onClick={onClear}
+                        onClick={e => {
+                            e.stopPropagation();
+                            onClear(e);
+                        }}
                         className="text-red-400 hover:text-red-300 hover:cursor-pointer transition duration-300"
                     >
                         <X size={18} />

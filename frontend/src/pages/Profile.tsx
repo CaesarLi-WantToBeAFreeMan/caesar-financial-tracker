@@ -9,6 +9,7 @@ import toast from "react-hot-toast";
 import {LoaderCircle} from "lucide-react";
 import {RenderIcon} from "../utilities/icon";
 import {FilePicker} from "../components/common/FilePicker";
+import {useNavigate} from "react-router-dom";
 
 interface UserType {
     firstName: string;
@@ -21,6 +22,7 @@ interface UserType {
 export default function Profile() {
     useUser();
 
+    const navigate = useNavigate();
     const context = useContext(UserContext);
     if (!context) return null;
     const {user} = context;
@@ -58,13 +60,14 @@ export default function Profile() {
                 last_name: profile.lastName,
                 email: profile.email,
                 password: profile.password,
-                profileImage: profile.profileImage
+                profile_image: profile.profileImage
             });
             toast.success("Changed successfully");
         } catch (error: any) {
             toast.error(error?.response?.data?.message || "Changed failed");
         } finally {
             setIsLoading(false);
+            navigate("/login");
         }
     };
 
@@ -86,7 +89,7 @@ export default function Profile() {
             <div className="bg-black/30 my-3 mx-1 p-5 rounded-xl border border-cyan-400/30 transition hover:shadow-[0_0_15px_rgba(34,211,238,0.6)]">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 m-3">
                     <div className="w-full flex items-center gap-3">
-                        <label className="text-cyan-400">First Name:</label>
+                        <label className="text-cyan-400 whitespace-nowrap">First Name:</label>
                         <input
                             value={profile.firstName}
                             placeholder="first name"
@@ -95,7 +98,7 @@ export default function Profile() {
                         />
                     </div>
                     <div className="w-full flex items-center gap-3">
-                        <label className="text-cyan-400">Last Name:</label>
+                        <label className="text-cyan-400 whitespace-nowrap">Last Name:</label>
                         <input
                             value={profile.lastName}
                             placeholder="last name"
@@ -104,7 +107,7 @@ export default function Profile() {
                         />
                     </div>
                     <div className="w-full flex items-center gap-3">
-                        <label className="text-cyan-400">Email:</label>
+                        <label className="text-cyan-400 whitespace-nowrap">Email:</label>
                         <input
                             value={profile.email}
                             placeholder="email"
@@ -113,7 +116,7 @@ export default function Profile() {
                         />
                     </div>
                     <div className="w-full flex items-center gap-3">
-                        <label className="text-cyan-400">Password:</label>
+                        <label className="text-cyan-400 whitespace-nowrap">Password:</label>
                         <div className="w-full relative">
                             <input
                                 type={showPassword ? "text" : "password"}
@@ -140,7 +143,7 @@ export default function Profile() {
                 </div>
 
                 <div className="mt-3 space-y-3">
-                    <label className="text-cyan-400">Profile Image:</label>
+                    <label className="text-cyan-400 whitespace-nowrap">Profile Image:</label>
                     <div className="mt-3 grid grid-cols-1 md:grid-cols-3 items-center gap-3">
                         <RenderIcon
                             icon={profile.profileImage}

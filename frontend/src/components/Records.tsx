@@ -510,7 +510,14 @@ export function Import({onClose}: ImportProps) {
                     {EXAMPLES[fileType]}
                 </pre>
             </div>
-            <FilePicker file={file} onFileChange={setFile} />
+            <FilePicker
+                file={file}
+                onChange={setFile}
+                onClear={e => {
+                    e.stopPropagation();
+                    setFile(null);
+                }}
+            />
             <div className="flex justify-end gap-3">
                 <button
                     onClick={onClose}
