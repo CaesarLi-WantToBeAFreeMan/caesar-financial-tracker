@@ -35,9 +35,7 @@ export default function Login() {
                     firstName: userData.first_name,
                     lastName: userData.last_name,
                     email: userData.email,
-                    profileImage: userData.profile_image || null,
-                    createdAt: userData.created_at,
-                    updatedAt: userData.updated_at
+                    profileImage: userData.profile_image || null
                 });
                 navigate("/profile");
             }

@@ -46,7 +46,7 @@ const orders: DataType<SummaryFilter["divisionMode"]>[] = [
 ];
 
 export function Filter({filter, onChange}: FilterProps) {
-    const {type, dateStart, dateEnd, priceLow, priceHigh, categories, chartMode, divisionMode} = filter;
+    const {type, dateStart, dateEnd, priceLow, priceHigh, category, chartMode, divisionMode} = filter;
     const typeIndex = Math.max(
         0,
         types.findIndex(t => t.value === type)
@@ -92,12 +92,7 @@ export function Filter({filter, onChange}: FilterProps) {
 
                 <div className="flex items-center gap-3">
                     <label className="text-cyan-400">Category:</label>
-                    <CategoryPicker
-                        selectedId={categories}
-                        type={type}
-                        onSelect={ids => onChange("categories", ids)}
-                        multiple
-                    />
+                    <CategoryPicker selectedId={category} type={type} onSelect={id => onChange("category", id)} />
                 </div>
 
                 <div className="flex justify-between items-center gap-3">

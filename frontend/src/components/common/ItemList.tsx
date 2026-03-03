@@ -1,8 +1,8 @@
 import {Box, Pen, Trash} from "lucide-react";
-import type {CategoryData} from "../../types/CategoryData";
+import type {CategoryData} from "../../types/CategoryTypes";
 import {RenderIcon} from "../../utilities/icon";
 import {useEffect, useState} from "react";
-import type {RecordData} from "../../types/records/RecordData";
+import type {RecordData} from "../../types/RecordTypes";
 import axiosConfig from "../../utilities/AxiosUtility";
 import {API_ENDPOINTS} from "../../utilities/apiEndpoint";
 import toast from "react-hot-toast";
@@ -35,7 +35,7 @@ export default function ItemList({title, items, totalElements, onEdit, onDelete,
         )
             .then((result: CategoryData[]) => {
                 const map: Record<number, CategoryData> = {};
-                result.forEach(category => (map[category.id] = category));
+                result.forEach(category => (map[category.id!] = category));
                 setCategories(prev => ({...prev, ...map}));
             })
             .catch((error: any) => toast.error(error?.response?.data?.message || "Fetch categories failed"));
@@ -92,7 +92,7 @@ export default function ItemList({title, items, totalElements, onEdit, onDelete,
                                         {isRecord && (
                                             <>
                                                 <p className="text-cyan-400">•</p>
-                                                <p className="text-[9px] text-white-400">{item.date}</p>
+                                                <p className="text-[9px] text-white-400">{(item as RecordData).date}</p>
                                             </>
                                         )}
                                     </div>

@@ -1,5 +1,5 @@
 import EmojiPicker, {Theme} from "emoji-picker-react";
-import {CircleX, Image} from "lucide-react";
+import {CircleX} from "lucide-react";
 import {useState} from "react";
 
 interface Props {
@@ -7,7 +7,7 @@ interface Props {
     onSelect: (icon: string) => void;
 }
 
-export default function EmojiPickerPopup({icon, onSelect}: Props) {
+export default function EmojiPickerPopup({onSelect}: Props) {
     const [isOpen, setIsOpen] = useState(false);
     return (
         <div className="flex items-start gap-4">

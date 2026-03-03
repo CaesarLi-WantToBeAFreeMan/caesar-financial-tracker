@@ -71,6 +71,16 @@ export default function Profile() {
         }
     };
 
+    const handleUpload = async (file: File) => {
+        setFile(file);
+        if (!file) {
+            setProfile(p => ({...p, profileImage: null}));
+            return;
+        }
+        const content = await fileToBase64(file);
+        setProfile(p => ({...p, profileImage: content}));
+    };
+
     const fileToBase64 = (file: File): Promise<string> =>
         new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -159,14 +169,9 @@ export default function Profile() {
                         />
                         <FilePicker
                             file={file}
-                            onChange={async (file: File) => {
-                                setFile(file);
-                                if (!file) {
-                                    setProfile(p => ({...p, profileImage: null}));
-                                    return;
-                                }
-                                const content = await fileToBase64(file);
-                                setProfile(p => ({...p, profileImage: content}));
+                            onChange={(file: File | null) => {
+                                if (!file) return;
+                                handleUpload(file);
                             }}
                             onClear={e => {
                                 e.stopPropagation();
@@ -180,7 +185,7 @@ export default function Profile() {
                 <div className="mt-5 mb-3 flex items center justify-center">
                     <button
                         onClick={updateProfile}
-                        disabled={isLoading || (profile.password && !passwordValid)}
+                        disabled={isLoading || (!!profile.password && !passwordValid)}
                         className="px-10 py-3 rounded-full bg-cyan-400 text-black font-bold tracking-widest hover:bg-cyan-300 hover:shadow-[0_0_20px_#22d3ee] disabled:opacity-10 disabled:cursor-not-allowed transition hover:cursor-pointer"
                     >
                         {isLoading ? (

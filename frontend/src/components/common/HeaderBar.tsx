@@ -3,6 +3,7 @@ import {useEffect, useRef, useState} from "react";
 import axiosConfig from "../../utilities/AxiosUtility";
 import {API_ENDPOINTS} from "../../utilities/apiEndpoint";
 import toast from "react-hot-toast";
+import type {ExportTypes} from "../../types/commonTypes";
 
 interface Props {
     title: string;
@@ -77,7 +78,7 @@ export default function HeaderBar({title, setOpenImportModal, setOpenCreateModal
                             ].map(item => (
                                 <button
                                     key={item.type}
-                                    onClick={() => handleExport(item.type)}
+                                    onClick={() => handleExport(item.type as ExportTypes)}
                                     className="w-full text-left p-3 text-sm text-cyan-200 hover:bg-cyan-500/10 hover:cursor-pointer"
                                 >
                                     {item.label}

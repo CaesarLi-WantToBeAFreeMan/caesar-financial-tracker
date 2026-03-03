@@ -12,7 +12,7 @@ export function getFirstChar(icon?: string | null): string {
 }
 
 interface RenderIconVariableType {
-    icon?: string | React.ReactNode | null;
+    icon?: React.ReactNode;
     name: string;
     loaderSize?: number;
     imageSize?: string;
@@ -53,7 +53,10 @@ export function RenderIcon({
                     />
                 </div>
             ) : isLucide ? (
-                React.cloneElement(icon as React.ReactElement, {size: boxSize, className: "text-cyan-400"})
+                React.cloneElement(icon as React.ReactElement<{size?: number; className?: string}>, {
+                    size: boxSize,
+                    className: "text-cyan-400"
+                })
             ) : typeof icon === "string" && icon.trim().length > 0 ? (
                 <span className={`${charSize} font-mono leading-none text-cyan-400`}>{getFirstChar(icon)}</span>
             ) : (

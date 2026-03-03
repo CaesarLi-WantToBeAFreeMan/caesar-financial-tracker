@@ -10,7 +10,7 @@ export interface SummaryFilter {
     dateEnd: string;
     priceLow: number;
     priceHigh: number | null;
-    categories: number[] | null;
+    category: number | null;
     chartMode: ChartMode;
     divisionMode: DivisionMode;
 }

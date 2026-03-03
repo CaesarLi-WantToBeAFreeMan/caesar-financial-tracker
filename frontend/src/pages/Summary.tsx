@@ -26,7 +26,7 @@ export default function Summary() {
         dateEnd: today,
         priceLow: 0,
         priceHigh: null,
-        categories: null,
+        category: null,
         chartMode: "line",
         divisionMode: "date"
     });
@@ -43,7 +43,7 @@ export default function Summary() {
                     dateEnd: filter.dateEnd,
                     priceLow: filter.priceLow,
                     priceHigh: filter.priceHigh,
-                    categories: filter.categories,
+                    categories: filter.category,
                     keyword: keyword || null
                 }
             });

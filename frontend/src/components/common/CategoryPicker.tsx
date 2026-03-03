@@ -3,9 +3,7 @@ import {ChevronLeft, ChevronRight, XCircle, LoaderCircle, Box} from "lucide-reac
 import axiosConfig from "../../utilities/AxiosUtility";
 import {API_ENDPOINTS} from "../../utilities/apiEndpoint";
 import {RenderIcon} from "../../utilities/icon";
-import type {CategoryType} from "../../types/CategoryType";
-import type {CategoryPage} from "../../types/CategoryPage";
-import type {CategoryData} from "../../types/CategoryData";
+import type {CategoryType, CategoryPage, CategoryData} from "../../types/CategoryTypes";
 import toast from "react-hot-toast";
 
 interface Props {

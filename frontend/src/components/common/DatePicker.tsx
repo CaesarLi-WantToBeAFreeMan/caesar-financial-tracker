@@ -29,7 +29,7 @@ export default function DatePicker({value, onChange, minDate, maxDate}: Props) {
         return () => document.removeEventListener("mousedown", handler);
     }, []);
 
-    const isDisabled = (iso: string) => iso > today || (minDate && iso < minDate) || (maxDate && iso > maxDate);
+    const isDisabled = (iso: string) => iso > today || !!(minDate && iso < minDate) || !!(maxDate && iso > maxDate);
     const isPrevDisabled =
         (month.getFullYear() <= 1970 && month.getMonth() <= 0) || (minDate && toISO(month) < minDate);
     const isNextDisabled = toISO(new Date(month.getFullYear(), month.getMonth() + 1, 1)) > today;

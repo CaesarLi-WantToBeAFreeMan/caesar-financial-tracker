@@ -12,7 +12,7 @@ interface MenuDataType {
 interface SidebarPropsType {
     setIsOpenSideMenu?: React.Dispatch<React.SetStateAction<boolean>>;
     activeRoute: string;
-    isMobile: boolean;
+    isMobile?: boolean;
 }
 
 const menuData: MenuDataType[] = [

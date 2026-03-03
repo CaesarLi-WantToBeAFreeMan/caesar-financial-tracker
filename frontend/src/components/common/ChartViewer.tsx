@@ -1,4 +1,4 @@
-import {useMemo, useState, useEffect} from "react";
+import {useMemo, useState, useEffect, type ReactNode} from "react";
 import {
     Area,
     Bar,
@@ -74,17 +74,17 @@ export default function ChartViewer({data, chartMode, divisionMode}: Props) {
     }, [data]);
 
     const chartData = useMemo(() => {
-        const groups: Record<string, {value: number; count: number; icon?: string}> = {};
+        const groups: Record<string, {value: number; count: number; icon?: ReactNode}> = {};
 
         data.forEach(item => {
             const category = categories[item.category_id || 0];
             let key: string =
                 divisionMode === "date"
-                    ? item.date
+                    ? String(item.date)
                     : divisionMode === "price"
-                      ? item.price
+                      ? String(item.price)
                       : divisionMode === "type"
-                        ? item.type
+                        ? String(item.type)
                         : divisionMode === "category"
                           ? category?.name || "Unknown"
                           : "Unknown";
@@ -114,7 +114,7 @@ export default function ChartViewer({data, chartMode, divisionMode}: Props) {
                 divisionMode === "date"
                     ? new Date(a.name).getTime() - new Date(b.name).getTime()
                     : divisionMode === "price"
-                      ? parsePrice(a.name) - parsePrice(b.name)
+                      ? (parsePrice(a.name) ?? 0) - (parsePrice(b.name) ?? 0)
                       : a.name.localeCompare(b.name)
             );
     }, [data, divisionMode, categories]);
