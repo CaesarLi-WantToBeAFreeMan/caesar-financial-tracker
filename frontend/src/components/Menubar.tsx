@@ -5,7 +5,6 @@ import {CircleX, Menu, User, LogOut} from "lucide-react";
 import logo from "../assets/images/logo.png";
 import toast from "react-hot-toast";
 import Sidebar from "./Sidebar";
-import {RenderIcon} from "../utilities/icon";
 
 interface PropsType {
     activeRoute: string;
@@ -84,7 +83,7 @@ export default function Menubar({activeRoute}: PropsType) {
                         <div className="absolute right-0 mt-3 w-64 z-70 p-3 bg-[#1c1c3d] border border-cyan-400/10 rounded-xl animate-in fade-in zoom-in duration-300">
                             {/*user info*/}
                             <div className="px-5 py-3 border-b border-[#0033ff]">
-                                <div className="flex items-center">
+                                <div className="flex items-center gap-3">
                                     <p className="text-sm font-semibold truncate text-[#0033ff]">{user?.firstName}</p>
                                     <p className="text-xs font-bold truncate text-[#0033ff]">{user?.lastName}</p>
                                 </div>
@@ -103,11 +102,16 @@ export default function Menubar({activeRoute}: PropsType) {
 
                 {/*mobile side menu*/}
                 {isOpenSideMenu && (
-                    <div className="fixed inset-0 top-[70px] bg-black/30 border border-[#0033ff] lg:hidden z-50">
-                        <div className="w-72 h-full bg-black-400">
+                    <>
+                        {/*blur background*/}
+                        <div
+                            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-120 lg:hidden"
+                            onClick={() => setIsOpenSideMenu(false)}
+                        />
+                        <div className="fixed inset-y-0 left-0 top-20 w-full sm:w-80 z-120 lg:hidden">
                             <Sidebar setIsOpenSideMenu={setIsOpenSideMenu} activeRoute={activeRoute} isMobile />
                         </div>
-                    </div>
+                    </>
                 )}
             </div>
         </header>

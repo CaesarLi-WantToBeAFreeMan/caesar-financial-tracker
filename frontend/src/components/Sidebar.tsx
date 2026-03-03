@@ -31,7 +31,7 @@ export default function Sidebar({setIsOpenSideMenu, activeRoute, isMobile}: Side
 
     return (
         <aside
-            className={`${isMobile ? "w-full h-full" : "hidden lg:flex flex-col w-64 sticky top-18 h-[calc(100vh-100px)]"} p-3 transition duration-300`}
+            className={`${isMobile ? "fixed inset-y-0 left-0 w-full bg-[#0a001f] h-screen flex flex-col z-120" : "hidden lg:flex flex-col w-64 sticky top-20"} p-3 transition duration-300`}
         >
             {user && (
                 <div className="flex flex-col items-center p-5 bg-black/40 rounded-2xl mb-8 border border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.1)]">
