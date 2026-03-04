@@ -1,7 +1,6 @@
-package com.caesarjlee.caesarfinancialtracker.dtos;
+package com.caesarjlee.caesarfinancialtracker.dtos.imports;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import lombok.Getter;
 
 @Getter
@@ -14,7 +13,7 @@ public class ImportResponse {
         this.success++;
     }
 
-    public void fail(String message) {
+    public void                fail(String message) {
         this.failed++;
         this.errors.add(message);
     }

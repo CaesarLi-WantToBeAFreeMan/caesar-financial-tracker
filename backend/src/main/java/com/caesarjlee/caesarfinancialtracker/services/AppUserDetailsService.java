@@ -3,10 +3,7 @@ package com.caesarjlee.caesarfinancialtracker.services;
 import com.caesarjlee.caesarfinancialtracker.entities.ProfileEntity;
 import com.caesarjlee.caesarfinancialtracker.repositories.ProfileRepository;
 
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.core.userdetails.*;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;

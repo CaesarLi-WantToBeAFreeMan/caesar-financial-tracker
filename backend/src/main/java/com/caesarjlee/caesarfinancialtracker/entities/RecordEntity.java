@@ -23,8 +23,8 @@ public class RecordEntity{
     @Column(nullable = false) private LocalDate date;
     @Column(nullable = false) private BigDecimal price;
     @Column(nullable = false) private String description;
-    @Column(updatable = false) @CreationTimestamp private LocalDateTime createdAt;
-    @UpdateTimestamp private LocalDateTime updatedAt;
+    @Column(name = "created_at", updatable = false) @CreationTimestamp private LocalDateTime createdAt;
+    @Column(name = "updated_at")@UpdateTimestamp private LocalDateTime updatedAt;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private CategoryEntity category;

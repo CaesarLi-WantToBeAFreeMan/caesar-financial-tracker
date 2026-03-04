@@ -1,22 +1,10 @@
 package com.caesarjlee.caesarfinancialtracker.entities;
 
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.*;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Table(name = "cft_categories")
@@ -30,6 +18,6 @@ public class CategoryEntity {
     private String                                                                                              type;
     private String                                                                                              icon;
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "profile_id", nullable = false) private ProfileEntity profile;
-    @Column(updatable = false) @CreationTimestamp private LocalDateTime createdAt;
-    @UpdateTimestamp private LocalDateTime                              updatedAt;
+    @Column(name = "created_at", updatable = false) @CreationTimestamp private LocalDateTime createdAt;
+    @Column(name = "updated_at") @UpdateTimestamp private LocalDateTime                              updatedAt;
 }

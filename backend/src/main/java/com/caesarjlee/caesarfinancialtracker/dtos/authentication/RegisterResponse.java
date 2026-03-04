@@ -1,4 +1,4 @@
-package com.caesarjlee.caesarfinancialtracker.dtos;
+package com.caesarjlee.caesarfinancialtracker.dtos.authentication;
 
 import java.time.LocalDateTime;
 

@@ -1,6 +1,6 @@
 package com.caesarjlee.caesarfinancialtracker.utilities;
 
-import com.caesarjlee.caesarfinancialtracker.dtos.*;
+import com.caesarjlee.caesarfinancialtracker.dtos.imports.ImportResponse;
 import com.caesarjlee.caesarfinancialtracker.entities.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.categories.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.dates.*;

@@ -1,7 +1,7 @@
 package com.caesarjlee.caesarfinancialtracker.controllers;
 
 import com.caesarjlee.caesarfinancialtracker.dtos.records.*;
-import com.caesarjlee.caesarfinancialtracker.dtos.ImportResponse;
+import com.caesarjlee.caesarfinancialtracker.dtos.imports.ImportResponse;
 import com.caesarjlee.caesarfinancialtracker.services.RecordService;
 
 import org.springframework.data.domain.Page;

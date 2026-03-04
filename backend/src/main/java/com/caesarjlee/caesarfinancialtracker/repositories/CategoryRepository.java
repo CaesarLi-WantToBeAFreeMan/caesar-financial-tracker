@@ -2,14 +2,11 @@ package com.caesarjlee.caesarfinancialtracker.repositories;
 
 import com.caesarjlee.caesarfinancialtracker.entities.CategoryEntity;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.domain.*;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public interface CategoryRepository extends JpaRepository<CategoryEntity, Long> {
     Optional<CategoryEntity> findByIdAndProfileId(Long id, Long profileId);
@@ -17,13 +14,21 @@ public interface CategoryRepository extends JpaRepository<CategoryEntity, Long> 
     List<CategoryEntity>     findByProfileId(Long profileId);
     Page<CategoryEntity>     findByProfileId(Long profileId, Pageable pageable);
     Page<CategoryEntity>     findByTypeAndProfileId(String type, Long profileId, Pageable pageable);
-    @Query("""
-        SELECT c
-        FROM CategoryEntity c
-        WHERE c.profile.id = :profileId
-            AND (:type IS NULL OR c.type = :type)
-            AND (:name IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :name, '%')))
-    """)
+    @Query(
+        value = """
+            SELECT * FROM cft_categories c
+            WHERE c.profile_id = :profileId
+                AND (:type      IS NULL OR LOWER(c.type)    =       :type)
+                AND (:keyword   IS NULL OR LOWER(c.name)    LIKE    :keyword)
+        """,
+        countQuery = """
+            SELECT COUNT(*) FROM cft_categories c
+            WHERE c.profile_id = :profileId
+                AND (:type      IS NULL OR LOWER(c.type)    =       :type)
+                AND (:keyword   IS NULL OR LOWER(c.name)    LIKE    :keyword)
+        """,
+        nativeQuery = true
+    )
     Page<CategoryEntity> search(@Param("profileId") Long profileId, @Param("type") String type,
-                                @Param("name") String name, Pageable pageable);
+                                @Param("keyword") String keyword, Pageable pageable);
 }

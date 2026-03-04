@@ -11,7 +11,6 @@ public enum CategoryType {
         try {
             return CategoryType.valueOf(value.toUpperCase());
         } catch(Exception e) {
-
             throw new CategoryTypeNotFoundException(value);
         }
     }

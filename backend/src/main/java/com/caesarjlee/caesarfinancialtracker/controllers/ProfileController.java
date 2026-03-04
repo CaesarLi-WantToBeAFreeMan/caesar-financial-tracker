@@ -1,6 +1,6 @@
 package com.caesarjlee.caesarfinancialtracker.controllers;
 
-import com.caesarjlee.caesarfinancialtracker.dtos.*;
+import com.caesarjlee.caesarfinancialtracker.dtos.authentication.*;
 import com.caesarjlee.caesarfinancialtracker.dtos.profiles.ProfileRequest;
 import com.caesarjlee.caesarfinancialtracker.services.ProfileService;
 

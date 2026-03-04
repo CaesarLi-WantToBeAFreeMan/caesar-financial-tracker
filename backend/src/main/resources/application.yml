@@ -1,12 +1,19 @@
 spring:
     profiles:
-        active: local #active local configuration
-        # active: prod #active production configuration
-
+        # active: local #active local configuration
+        active: prod #active production configuration
     jackson:
         property-naming-strategy: SNAKE_CASE
+    jpa:
+        properties:
+            hibernate:
+                format_sql: true #format SQL statements
 
 server:
     port: 1989
     servlet:
         context-path: /api/alpha.1.0
+
+app:
+    cors:
+        allowed-origins: http://localhost:5173, https://www.caesaris.net

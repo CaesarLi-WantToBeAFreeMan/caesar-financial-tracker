@@ -1,17 +1,163 @@
 @import "tailwindcss";
 
-body {
-    background-color: #282c34;
-    color: #abb2bf;
-    overflow-x: hidden;
-    box-sizing: border-box;
+/*font size*/
+:root {
+    --base-font-size: 16px;
+    --font-mono: "Courier New", "Cascadia Code", monospace;
+}
+html {
+    font-size: var(--base-font-size);
 }
 
+/*scroll bar*/
+::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(34, 211, 238, 0.3);
+    border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(34, 211, 238, 0.6);
+}
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(34, 211, 238, 0.35) transparent;
+}
+
+/*dark cyberpunk*/
+html.dark {
+    --bg-base: #070f34;
+    --bg-surface: #0a001f;
+    --bg-card: rgba(0, 0, 0, 0.4);
+    --bg-hover: rgba(255, 255, 255, 0.05);
+    --border: rgba(34, 211, 238, 0.25);
+    --border-glow: rgba(34, 211, 238, 0.5);
+    --text-primary: #e2e8f0;
+    --text-accent: #22d3ee;
+    --text-muted: #64748b;
+    --text-dim: #94a3b8;
+    --glow-cyan: 0 0 20px rgba(34, 211, 238, 0.4);
+    --glow-purple: 0 0 20px rgba(153, 0, 255, 0.4);
+    --input-bg: rgba(0, 0, 0, 0.6);
+    --shadow: 0 3px 23px rgba(0, 0, 0, 0.6);
+}
+
+/*light cyberpunk*/
+html.light {
+    --bg-base: #f0f4ff;
+    --bg-surface: #ffffff;
+    --bg-card: rgba(255, 255, 255, 0.85);
+    --bg-hover: rgba(34, 211, 238, 0.08);
+    --border: rgba(34, 211, 238, 0.3);
+    --border-glow: rgba(34, 211, 238, 0.6);
+    --text-primary: #1e293b;
+    --text-accent: #0891b2;
+    --text-muted: #64748b;
+    --text-dim: #475569;
+    --glow-cyan: 0 0 15px rgba(34, 211, 238, 0.2);
+    --glow-purple: 0 0 15px rgba(153, 0, 255, 0.15);
+    --input-bg: rgba(255, 255, 255, 0.9);
+    --shadow: 0 3px 23px rgba(0, 0, 0, 0.1);
+}
+
+/*base body*/
+body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    overflow-x: hidden;
+    box-sizing: border-box;
+    transition:
+        background-color 0.3s,
+        color 0.3s;
+}
+
+/*reusable classes*/
 @layer components {
+    /*inputs*/
     .cyber-input {
-        @apply w-full bg-black border border-cyan-400 rounded-xl px-4 py-3
-           text-cyan-200 placeholder-cyan-500
-           focus:outline-none focus:ring-2 focus:ring-cyan-400
-           shadow-[0_0_10px_rgba(34,211,238,0.4)];
+        @apply w-full rounded-xl px-4 py-3 transition duration-200;
+        background: var(--input-bg);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        outline: none;
+    }
+    .cyber-input::placeholder {
+        color: var(--text-muted);
+    }
+    .cyber-input:focus {
+        border-color: var(--border-glow);
+        box-shadow: var(--glow-cyan);
+    }
+
+    /*cards/panels*/
+    .cyber-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 1rem;
+        transition:
+            box-shadow 0.2s,
+            border-color 0.2s;
+    }
+    .cyber-card:hover {
+        border-color: var(--border-glow);
+        box-shadow: var(--glow-cyan);
+    }
+
+    /*primary button*/
+    .cyber-btn {
+        @apply px-6 py-2.5 rounded-full font-bold tracking-wider transition duration-200 cursor-pointer;
+        background: var(--text-accent);
+        color: #0a001f;
+    }
+    .cyber-btn:hover {
+        filter: brightness(1.15);
+        box-shadow: var(--glow-cyan);
+    }
+    .cyber-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        filter: none;
+        box-shadow: none;
+    }
+
+    /*ghost/outline button*/
+    .cyber-btn-ghost {
+        @apply px-6 py-2.5 rounded-full font-bold tracking-wider transition duration-200 cursor-pointer;
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-accent);
+    }
+    .cyber-btn-ghost:hover {
+        border-color: var(--border-glow);
+        box-shadow: var(--glow-cyan);
+    }
+
+    /*labels*/
+    .cyber-label {
+        @apply text-sm font-medium mb-1 block;
+        color: var(--text-accent);
+    }
+
+    /*section headings*/
+    .cyber-section {
+        @apply text-xs font-bold uppercase tracking-widest mb-3;
+        color: var(--text-muted);
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 6px;
+    }
+
+    /*scrollable sidebar navigator*/
+    .sidebar-nav {
+        @apply flex-1 overflow-y-auto space-y-1;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(34, 211, 238, 0.2) transparent;
     }
 }

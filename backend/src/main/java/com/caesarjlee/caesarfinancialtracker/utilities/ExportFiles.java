@@ -1,6 +1,6 @@
 package com.caesarjlee.caesarfinancialtracker.utilities;
 
-import com.caesarjlee.caesarfinancialtracker.dtos.CategoryExportDto;
+import com.caesarjlee.caesarfinancialtracker.dtos.categories.CategoryExportDto;
 import com.caesarjlee.caesarfinancialtracker.entities.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.files.ExportFileException;
 import com.caesarjlee.caesarfinancialtracker.exceptions.files.entities.InvalidEntityException;

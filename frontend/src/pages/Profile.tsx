@@ -1,200 +1,246 @@
-import {useContext, useEffect, useState} from "react";
+import {useCallback, useContext, useEffect, useMemo, useState} from "react";
 import Dashboard from "../components/Dashboard";
 import {useUser} from "../hooks/useUser";
 import {UserContext} from "../context/UserContext";
+import {useI18n} from "../context/I18nContext";
 import {validatePassword} from "../utilities/validations";
 import axiosConfig from "../utilities/AxiosUtility";
 import {API_ENDPOINTS} from "../utilities/apiEndpoint";
 import toast from "react-hot-toast";
-import {LoaderCircle} from "lucide-react";
-import {RenderIcon} from "../utilities/icon";
+import {LoaderCircle, Eye, EyeOff, User} from "lucide-react";
 import {FilePicker} from "../components/common/FilePicker";
-import {useNavigate} from "react-router-dom";
-
-interface UserType {
-    firstName: string;
-    lastName: string;
-    email: string;
-    password: string;
-    profileImage: string | null;
-}
 
 export default function Profile() {
     useUser();
 
-    const navigate = useNavigate();
     const context = useContext(UserContext);
     if (!context) return null;
-    const {user} = context;
+    const {user, setUser} = context;
+    const {translation: t} = useI18n();
 
-    const [profile, setProfile] = useState<UserType>({
-        firstName: "",
-        lastName: "",
-        email: "",
-        password: "",
-        profileImage: null
-    });
+    const [firstName, setFirstName] = useState<string>("");
+    const [lastName, setLastName] = useState<string>("");
+    const [email, setEmail] = useState<string>("");
+    const [password, setPassword] = useState<string>("");
+    const [profileImage, setProfileImage] = useState<string | null>(null);
+    const [showPw, setShowPw] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [file, setFile] = useState<File | null>(null);
 
     useEffect(() => {
         if (user) {
-            setProfile({
-                firstName: user.firstName ?? "",
-                lastName: user.lastName ?? "",
-                email: user.email ?? "",
-                password: "",
-                profileImage: user.profileImage ?? null
-            });
+            setFirstName(user.firstName ?? "");
+            setLastName(user.lastName ?? "");
+            setEmail(user.email ?? "");
+            setProfileImage(user.profileImage ?? null);
+            setPassword("");
         }
     }, [user]);
 
-    const [showPassword, setShowPassword] = useState<boolean>(false);
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-    const passwordValid = validatePassword(profile.password);
-    const [file, setFile] = useState<File | null>(null);
+    const passwordValid = useMemo(() => validatePassword(password), [password]);
 
-    const updateProfile = async () => {
+    const fileToBase64 = useCallback(
+        (file: File): Promise<string> =>
+            new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = reject;
+            }),
+        []
+    );
+
+    const handleUpload = useCallback(
+        async (file: File) => {
+            setFile(file);
+            const content = await fileToBase64(file);
+            setProfileImage(content);
+        },
+        [fileToBase64]
+    );
+
+    const updateProfile = useCallback(async () => {
         setIsLoading(true);
         try {
             await axiosConfig.put(API_ENDPOINTS.UPDATE_PROFILE, {
-                first_name: profile.firstName,
-                last_name: profile.lastName,
-                email: profile.email,
-                password: profile.password,
-                profile_image: profile.profileImage
+                first_name: firstName,
+                last_name: lastName,
+                email,
+                password: password || undefined,
+                profile_image: profileImage
             });
-            toast.success("Changed successfully");
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || "Changed failed");
+            toast.success(t.profile.updateSuccess);
+            setUser(prev => (prev ? {...prev, firstName, lastName, email, profileImage: profileImage ?? null} : prev));
+            setPassword("");
+        } catch (e: any) {
+            toast.error(e?.response?.data?.message || t.profile.updateFailed);
         } finally {
             setIsLoading(false);
-            navigate("/login");
         }
-    };
+    }, [firstName, lastName, email, password, profileImage, setUser, t]);
 
-    const handleUpload = async (file: File) => {
-        setFile(file);
-        if (!file) {
-            setProfile(p => ({...p, profileImage: null}));
-            return;
-        }
-        const content = await fileToBase64(file);
-        setProfile(p => ({...p, profileImage: content}));
+    const inputStyle = {
+        background: "var(--input-bg)",
+        border: "1px solid var(--border)",
+        borderRadius: "0.5rem",
+        color: "var(--text-primary)",
+        padding: "6px 12px",
+        width: "100%",
+        outline: "none",
+        transition: "border-color 0.2s, box-shadow 0.2s"
     };
-
-    const fileToBase64 = (file: File): Promise<string> =>
-        new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = reject;
-        });
 
     return (
-        <Dashboard activeRoute="Profile">
-            <div className="flex items-center justify-center">
-                <h2 className="text-2xl font-semibold text-cyan-300">
-                    Hello {user?.firstName} {user?.lastName}
+        <Dashboard activeRoute={t.nav.profile}>
+            {/*greeting*/}
+            <div className="flex items-center gap-4 mb-6">
+                <div
+                    className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center"
+                    style={{border: "2px solid var(--border-glow)"}}
+                >
+                    {profileImage ? (
+                        <img src={profileImage} alt="avatar" className="w-full h-full object-cover" />
+                    ) : (
+                        <User size={26} style={{color: "var(--text-accent)"}} />
+                    )}
+                </div>
+                <h2 className="text-2xl font-bold" style={{color: "var(--text-accent)"}}>
+                    {t.profile.hello}, {user?.firstName} {user?.lastName}
                 </h2>
             </div>
-            <div className="bg-black/30 my-3 mx-1 p-5 rounded-xl border border-cyan-400/30 transition hover:shadow-[0_0_15px_rgba(34,211,238,0.6)]">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 m-3">
-                    <div className="w-full flex items-center gap-3">
-                        <label className="text-cyan-400 whitespace-nowrap">First Name:</label>
+
+            <div className="cyber-card p-5 md:p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {/*first name*/}
+                    <div>
+                        <label className="cyber-label">{t.profile.firstName}</label>
                         <input
-                            value={profile.firstName}
-                            placeholder="first name"
-                            onChange={e => setProfile({...profile, firstName: e.target.value})}
-                            className="text-cyan-200 font-medium w-full truncate rounded-lg border border-cayn-400/30 bg-black/40 px-3 py-1 transition hover:border-cyan-400/60 hover:shadow-[0_0_10px_rgba(34,211,238,0.2)]"
+                            value={firstName}
+                            placeholder={t.profile.firstName}
+                            onChange={e => setFirstName(e.target.value)}
+                            style={inputStyle}
+                            onFocus={e => {
+                                e.currentTarget.style.borderColor = "var(--border-glow)";
+                                e.currentTarget.style.boxShadow = "var(--glow-cyan)";
+                            }}
+                            onBlur={e => {
+                                e.currentTarget.style.borderColor = "var(--border)";
+                                e.currentTarget.style.boxShadow = "none";
+                            }}
                         />
                     </div>
-                    <div className="w-full flex items-center gap-3">
-                        <label className="text-cyan-400 whitespace-nowrap">Last Name:</label>
+                    {/*last name*/}
+                    <div>
+                        <label className="cyber-label">{t.profile.lastName}</label>
                         <input
-                            value={profile.lastName}
-                            placeholder="last name"
-                            onChange={e => setProfile({...profile, lastName: e.target.value})}
-                            className="text-cyan-200 font-medium w-full truncate rounded-lg border border-cayn-400/30 bg-black/40 px-3 py-1 transition hover:border-cyan-400/60 hover:shadow-[0_0_10px_rgba(34,211,238,0.2)]"
+                            value={lastName}
+                            placeholder={t.profile.lastName}
+                            onChange={e => setLastName(e.target.value)}
+                            style={inputStyle}
+                            onFocus={e => {
+                                e.currentTarget.style.borderColor = "var(--border-glow)";
+                                e.currentTarget.style.boxShadow = "var(--glow-cyan)";
+                            }}
+                            onBlur={e => {
+                                e.currentTarget.style.borderColor = "var(--border)";
+                                e.currentTarget.style.boxShadow = "none";
+                            }}
                         />
                     </div>
-                    <div className="w-full flex items-center gap-3">
-                        <label className="text-cyan-400 whitespace-nowrap">Email:</label>
-                        <input
-                            value={profile.email}
-                            placeholder="email"
-                            disabled
-                            className="text-cyan-200 font-medium w-full truncate rounded-lg border border-cayn-400/30 bg-black/40 px-3 py-1 transition hover:border-cyan-400/60 hover:shadow-[0_0_10px_rgba(34,211,238,0.2)] disabled:cursor-not-allowed disabled:opacity-10"
-                        />
+                    {/*email*/}
+                    <div>
+                        <label className="cyber-label">{t.profile.email}</label>
+                        <input value={email} disabled style={{...inputStyle, opacity: 0.5, cursor: "not-allowed"}} />
                     </div>
-                    <div className="w-full flex items-center gap-3">
-                        <label className="text-cyan-400 whitespace-nowrap">Password:</label>
-                        <div className="w-full relative">
+                    {/*password*/}
+                    <div>
+                        <label className="cyber-label">{t.profile.password}</label>
+                        <div className="relative">
                             <input
-                                type={showPassword ? "text" : "password"}
-                                value={profile.password}
-                                placeholder="password"
-                                onChange={e => setProfile({...profile, password: e.target.value})}
-                                className="text-cyan-200 font-medium w-full truncate rounded-lg border border-cayn-400/30 bg-black/40 px-3 py-1 transition hover:border-cyan-400/60 hover:shadow-[0_0_10px_rgba(34,211,238,0.2)]"
+                                type={showPw ? "text" : "password"}
+                                value={password}
+                                placeholder={t.profile.leavePasswordBlank}
+                                onChange={e => setPassword(e.target.value)}
+                                style={{...inputStyle, paddingRight: "5rem"}}
+                                onFocus={e => {
+                                    e.currentTarget.style.borderColor = "var(--border-glow)";
+                                    e.currentTarget.style.boxShadow = "var(--glow-cyan)";
+                                }}
+                                onBlur={e => {
+                                    e.currentTarget.style.borderColor = "var(--border)";
+                                    e.currentTarget.style.boxShadow = "none";
+                                }}
                             />
-                            {profile.password && (
+                            {password && (
                                 <span
-                                    className={`absolute right-12 top-1/2 -translate-y-1/2 text-xl ${passwordValid ? "text-green-400" : "text-red-400"}`}
+                                    className={`absolute right-10 top-1/2 -translate-y-1/2 text-base ${passwordValid ? "text-green-400" : "text-red-400"}`}
                                 >
                                     {passwordValid ? "✓" : "✕"}
                                 </span>
                             )}
                             <button
-                                onClick={() => setShowPassword(p => !p)}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-xl"
+                                type="button"
+                                onClick={() => setShowPw(p => !p)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer"
+                                style={{color: "var(--text-muted)"}}
                             >
-                                {showPassword ? "🙉" : "🙈"}
+                                {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                             </button>
                         </div>
+                        <p className="mt-1 text-xs min-h-[1rem]" style={{color: "var(--text-muted)"}}>
+                            {t.profile.leavePasswordBlank}
+                        </p>
                     </div>
                 </div>
 
-                <div className="mt-3 space-y-3">
-                    <label className="text-cyan-400 whitespace-nowrap">Profile Image:</label>
-                    <div className="mt-3 grid grid-cols-1 md:grid-cols-3 items-center gap-3">
-                        <RenderIcon
-                            icon={profile.profileImage}
-                            name="profile image"
-                            imageSize="w-full rounded-xl"
-                            boxSize={39}
-                        />
+                {/*profile image*/}
+                <div className="mt-5">
+                    <label className="cyber-label">{t.profile.profileImage}</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2 items-center">
+                        <div
+                            className="w-24 h-24 rounded-xl overflow-hidden flex items-center justify-center"
+                            style={{border: "1px solid var(--border)"}}
+                        >
+                            {profileImage ? (
+                                <img src={profileImage} alt="preview" className="w-full h-full object-cover" />
+                            ) : (
+                                <User size={36} style={{color: "var(--text-muted)"}} />
+                            )}
+                        </div>
                         <input
-                            placeholder="profile image"
-                            className="w-full rounded-lg bg-black/40 border border-cyan-400/20 p-1 text-cyan-100"
-                            value={profile.profileImage!}
-                            onChange={e => setProfile({...profile, profileImage: e.target.value})}
+                            value={profileImage ?? ""}
+                            placeholder="URL or base64"
+                            onChange={e => setProfileImage(e.target.value || null)}
+                            className="cyber-input col-span-1"
                         />
                         <FilePicker
                             file={file}
-                            onChange={(file: File | null) => {
-                                if (!file) return;
-                                handleUpload(file);
+                            onChange={f => {
+                                if (f) handleUpload(f);
                             }}
                             onClear={e => {
                                 e.stopPropagation();
                                 setFile(null);
-                                setProfile(p => ({...p, profileImage: null}));
+                                setProfileImage(null);
                             }}
                         />
                     </div>
                 </div>
 
-                <div className="mt-5 mb-3 flex items center justify-center">
+                {/*save button*/}
+                <div className="mt-6 flex justify-center">
                     <button
                         onClick={updateProfile}
-                        disabled={isLoading || (!!profile.password && !passwordValid)}
-                        className="px-10 py-3 rounded-full bg-cyan-400 text-black font-bold tracking-widest hover:bg-cyan-300 hover:shadow-[0_0_20px_#22d3ee] disabled:opacity-10 disabled:cursor-not-allowed transition hover:cursor-pointer"
+                        disabled={isLoading || (!!password && !passwordValid)}
+                        className="cyber-btn px-10"
                     >
                         {isLoading ? (
-                            <>
-                                <LoaderCircle className="animate-spin w-5 h-5" />
-                                Updating
-                            </>
+                            <span className="flex items-center gap-2">
+                                <LoaderCircle size={16} className="animate-spin" />
+                                {t.profile.updating}
+                            </span>
                         ) : (
-                            "Update"
+                            t.profile.update
                         )}
                     </button>
                 </div>

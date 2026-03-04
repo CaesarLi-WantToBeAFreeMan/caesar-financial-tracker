@@ -1,11 +1,14 @@
 import axios from "axios";
-import {BASE_URL} from "./apiEndpoint";
+
+const BASE_URL = import.meta.env.VITE_API_BASE_URL
+    ? `${import.meta.env.VITE_API_BASE_URL}/api/alpha.1.0`
+    : "http://localhost:1989/api/alpha.1.0";
 
 const axiosConfig = axios.create({
     baseURL: BASE_URL,
     headers: {"Content-Type": "application/json"},
     withCredentials: false,
-    timeout: 32_000 //32 seconds
+    timeout: 32_000
 });
 
 axiosConfig.interceptors.request.use(
@@ -22,16 +25,11 @@ axiosConfig.interceptors.response.use(
     error => {
         if (error.response) {
             if (error.response.status === 401) {
-                localStorage.removeItem("token"); //clear invalid/expired token
+                localStorage.removeItem("token");
                 window.location.href = "/login";
-            } else if (error.response.status === 500) console.log("Server error\nPlease try again later");
-            else if (error.response.status === 503)
-                console.log(
-                    "Backend is waking up\n(please donate me to use paid server.·´¯`(>▂<)´¯`·. )\nPlease wait 30-60 seconds"
-                );
-        } else if (error.code === "ECONNABORTED")
-            console.log("Request timeout (server might be starting up)\nPlease try again");
-        else if (!error.response) console.log("Network error\n Please check your connecition and then try again");
+            }
+        } else if (error.code === "ECONNABORTED") console.error("Request timeout — server may be starting up");
+        else if (!error.response) console.error("Network error — check your connection");
         return Promise.reject(error);
     }
 );

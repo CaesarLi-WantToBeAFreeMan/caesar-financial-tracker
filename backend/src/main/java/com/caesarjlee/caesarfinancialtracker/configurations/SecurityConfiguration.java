@@ -3,11 +3,9 @@ package com.caesarjlee.caesarfinancialtracker.configurations;
 import com.caesarjlee.caesarfinancialtracker.securities.JwtAuthenticationFilter;
 import com.caesarjlee.caesarfinancialtracker.services.AppUserDetailsService;
 
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.*;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.*;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -31,19 +29,19 @@ public class SecurityConfiguration {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
-            .csrf(csrf -> csrf.disable())   // disable CSRF to use JWT
+            .csrf(csrf -> csrf.disable())
             .cors(Customizer.withDefaults())
             .sessionManagement(
-                session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))   // no session
+                session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(
                 authentication
                 -> authentication
-                       .requestMatchers(HttpMethod.POST, "/profiles/register", "/profiles/login")   // public endpoints
+                       .requestMatchers(HttpMethod.POST, "/profiles/register", "/profiles/login")// public endpoints
                        .permitAll()
-                       .anyRequest()   // everything else requires JWT
+                       .anyRequest()// everything else requires JWT
                        .authenticated())
             .authenticationProvider(authenticationProvider())
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);   // JWT filter
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);// JWT filter
         return httpSecurity.build();
     }
 
@@ -60,8 +58,7 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
-        throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
     }
 }

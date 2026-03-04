@@ -1,4 +1,4 @@
-import {useMemo, useState, useEffect, type ReactNode} from "react";
+import {useMemo, useState, useEffect, useCallback} from "react";
 import {
     Area,
     Bar,
@@ -18,14 +18,14 @@ import {
     PolarGrid,
     PolarAngleAxis
 } from "recharts";
-import {BadgeDollarSign, Banknote, Box, Calendar, LoaderCircle} from "lucide-react";
+import {Box, LoaderCircle} from "lucide-react";
 import axiosConfig from "../../utilities/AxiosUtility";
 import {API_ENDPOINTS} from "../../utilities/apiEndpoint";
-import {RenderIcon} from "../../utilities/icon";
+import {useI18n} from "../../context/I18nContext";
+import {useSettings} from "../../context/SettingsContext";
 import type {RecordData} from "../../types/RecordTypes";
 import type {ChartMode, DivisionMode} from "../../types/SummaryTypes.ts";
 import type {CategoryData} from "../../types/CategoryTypes";
-import {parsePrice, priceFormat} from "../../utilities/prices.ts";
 
 interface Props {
     data: RecordData[];
@@ -33,207 +33,293 @@ interface Props {
     divisionMode: DivisionMode;
 }
 
-const COLORS = [
-    "#8500f3",
-    "#ff62e5",
-    "#00b3ff",
-    "#39ff14",
-    "#0033ff",
-    "#ff4500",
-    "#f5a623",
-    "#003c8f",
-    "#ff0099",
-    "#003c8f"
+const CYBER_COLORS = [
+    "#22d3ee",
+    "#a855f7",
+    "#ec4899",
+    "#10b981",
+    "#f59e0b",
+    "#3b82f6",
+    "#ef4444",
+    "#84cc16",
+    "#f97316",
+    "#06b6d4"
 ];
 
 export default function ChartViewer({data, chartMode, divisionMode}: Props) {
     const [categories, setCategories] = useState<Record<number, CategoryData>>({});
-    const [loading, setLoading] = useState(false);
+    const [loadingCats, setLoadingCats] = useState<boolean>(false);
+
+    const {translation} = useI18n();
+    const {formatPrice, formatDate} = useSettings();
+
+    const fetchCategories = useCallback(async (ids: number[]) => {
+        if (!ids.length) return;
+        setLoadingCats(true);
+        try {
+            const results = await Promise.all(
+                ids.map(id => axiosConfig.get(API_ENDPOINTS.FETCH_CATEGORY.replace("{id}", String(id))))
+            );
+            const map: Record<number, CategoryData> = {};
+            results.forEach(result => {
+                if (result.data?.id) map[result.data.id] = result.data;
+            });
+            setCategories(prev => ({...prev, ...map}));
+        } catch {
+        } finally {
+            setLoadingCats(false);
+        }
+    }, []);
 
     useEffect(() => {
-        const fetchCategories = async () => {
-            const ids = Array.from(
-                new Set(data.map(record => record.category_id).filter(id => id !== null))
-            ) as number[];
-            if (!ids.length) return;
-            setLoading(true);
-            try {
-                const results = await Promise.all(
-                    ids.map(id => axiosConfig.get(API_ENDPOINTS.FETCH_CATEGORY.replace("{id}", String(id))))
-                );
-                const map: Record<number, CategoryData> = {};
-                results.forEach(result => {
-                    if (result.data.id) map[result.data.id] = result.data;
-                });
-                setCategories(prev => ({...prev, ...map}));
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchCategories();
+        const ids = Array.from(new Set(data.map(r => r.category_id).filter(Boolean))) as number[];
+        const missing = ids.filter(id => !categories[id]);
+        if (missing.length) fetchCategories(missing);
     }, [data]);
 
     const chartData = useMemo(() => {
-        const groups: Record<string, {value: number; count: number; icon?: ReactNode}> = {};
+        const groups: Record<string, {income: number; expense: number; count: number}> = {};
 
         data.forEach(item => {
-            const category = categories[item.category_id || 0];
-            let key: string =
-                divisionMode === "date"
-                    ? String(item.date)
-                    : divisionMode === "price"
-                      ? String(item.price)
-                      : divisionMode === "type"
-                        ? String(item.type)
-                        : divisionMode === "category"
-                          ? category?.name || "Unknown"
-                          : "Unknown";
-            const icon = category?.icon || <Box />;
-            if (!groups[key]) groups[key] = {value: 0, count: 0, icon};
-            groups[key].value += item.price;
+            let key: string;
+            switch (divisionMode) {
+                case "date":
+                    key = item.date;
+                    break;
+                case "category":
+                    key = categories[item.category_id ?? 0]?.name ?? "Unknown";
+                    break;
+                case "type":
+                    key = item.type === "income" ? translation.common.income : translation.common.expense;
+                    break;
+                case "price":
+                    key = formatPrice(item.price);
+                    break;
+                default:
+                    key = item.date;
+            }
+            if (!groups[key]) groups[key] = {income: 0, expense: 0, count: 0};
+            if (item.type === "income") groups[key].income += item.price;
+            else groups[key].expense += item.price;
             groups[key].count += 1;
         });
 
         return Object.entries(groups)
             .map(([name, stats], index) => ({
-                name: divisionMode === "price" ? priceFormat(Number(name)) : name,
-                displayValue: divisionMode === "price" ? stats.count : stats.value,
-                icon:
-                    divisionMode === "date" ? (
-                        <Calendar />
-                    ) : divisionMode === "price" ? (
-                        <BadgeDollarSign />
-                    ) : divisionMode === "type" ? (
-                        <Banknote />
-                    ) : (
-                        stats.icon
-                    ),
-                fill: COLORS[index % COLORS.length]
+                name,
+                income: Math.round(stats.income * 100) / 100,
+                expense: Math.round(stats.expense * 100) / 100,
+                net: Math.round((stats.income - stats.expense) * 100) / 100,
+                count: stats.count,
+                fill: CYBER_COLORS[index % CYBER_COLORS.length]
             }))
-            .sort((a, b) =>
-                divisionMode === "date"
-                    ? new Date(a.name).getTime() - new Date(b.name).getTime()
-                    : divisionMode === "price"
-                      ? (parsePrice(a.name) ?? 0) - (parsePrice(b.name) ?? 0)
-                      : a.name.localeCompare(b.name)
-            );
-    }, [data, divisionMode, categories]);
+            .sort((a, b) => (divisionMode === "date" ? a.name.localeCompare(b.name) : 0));
+    }, [data, divisionMode, categories, translation, formatPrice]);
 
-    const label = divisionMode === "price" ? "Record Count" : "Total Amount";
+    const isPrice = divisionMode !== "price";
+    const valueKeys: Array<{key: string; color: string; name: string}> = isPrice
+        ? [
+              {key: "income", color: "#22d3ee", name: translation.common.income},
+              {key: "expense", color: "#ec4899", name: translation.common.expense}
+          ]
+        : [{key: "count", color: "#a855f7", name: translation.summary.recordCount}];
 
-    if (!loading && !chartData.length)
-        return (
-            <div className="flex flex-col items-center justify-center py-12 border-3 border-dashed border-cyan-500/10 rounded-xl bg-cyan-500/[0.02]">
-                <Box size={50} className="text-cyan-500/20 mb-3" />
-                <p className="text-cyan-400/50 font-medium">No item found</p>
-                <p className="text-xs text-cyan-500/30">Try importing a file or adding an item in record page</p>
-            </div>
-        );
-
-    const CustomTooltip = ({active, payload}: any) => {
+    //tool tip
+    const CustomTooltip = ({active, payload, label}: any) => {
         if (!active || !payload?.length) return null;
-        const item = payload[0].payload;
         return (
-            <div className="bg-black/50 border border-cyan-600/10 p-3 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(34,211,238,0.6)]">
-                <div className="flex items-center gap-3 mb-1 border-b border-cyan-500/10 pb-1">
-                    <RenderIcon icon={item.icon} name={item.name} />
-                    <span className="font-bold text-xs truncate" style={{color: item.fill ?? "#67e8f9"}}>
-                        {item.name}
-                    </span>
-                </div>
-                <div className="flex flex-col">
-                    <span className="text-cyan-600 font-mono text-normal font-bold">
-                        {divisionMode === "price" ? `${item.displayValue} Records` : priceFormat(item.displayValue)}
-                    </span>
-                </div>
+            <div
+                style={{
+                    background: "var(--bg-surface)",
+                    border: "1px solid var(--border-glow)",
+                    borderRadius: "10px",
+                    padding: "10px 14px",
+                    backdropFilter: "blur(12px)",
+                    boxShadow: "var(--glow-cyan)",
+                    minWidth: "140px"
+                }}
+            >
+                <p className="text-xs font-bold mb-2 truncate" style={{color: "var(--text-accent)"}}>
+                    {label}
+                </p>
+                {payload.map((p: any) => (
+                    <div key={p.dataKey} className="flex items-center justify-between gap-4 text-xs">
+                        <span style={{color: p.color}}>{p.name}</span>
+                        <span className="font-mono font-bold" style={{color: p.color}}>
+                            {p.dataKey === "count" ? p.value : formatPrice(p.value)}
+                        </span>
+                    </div>
+                ))}
             </div>
         );
     };
 
-    const commonAxes = [
-        <CartesianGrid key="g" strokeDasharray="3 3" stroke="rgba(34,211,238,0.3)" vertical={false} />,
-        <XAxis key="x" dataKey="name" stroke="#ff62e5" fontSize={9} tickLine={false} axisLine={true} />,
-        <YAxis key="y" stroke="#39ff14" fontSize={9} tickLine={false} axisLine={false} />,
-        <Tooltip key="t" content={<CustomTooltip />} cursor={{fill: "rgba(34,211,238,0.3)"}} />,
-        <Legend key="l" wrapperStyle={{paddingTop: "1px", fontSize: "9px"}} verticalAlign="bottom" />
-    ];
+    //formatters
+    const yFormatter = (value: number) => {
+        if (divisionMode === "price") return String(value);
+        if (Math.abs(value) >= 1_000_000_000_000) return formatPrice(value / 1_000_000_000_000) + "T";
+        if (Math.abs(value) >= 1_000_000_000) return formatPrice(value / 1_000_000_000) + "B";
+        if (Math.abs(value) >= 1_000_000) return formatPrice(value / 1_000_000) + "M";
+        if (Math.abs(value) >= 1_000) return formatPrice(value / 1_000) + "K";
+        return formatPrice(value);
+    };
+
+    const xFormatter = (value: string) => {
+        if (divisionMode === "date") return formatDate(value);
+        return value.length > 10 ? value.slice(0, 10) + "…" : value;
+    };
+
+    //empty
+    if (!loadingCats && !chartData.length)
+        return (
+            <div
+                className="flex flex-col items-center justify-center py-16 rounded-xl"
+                style={{border: "2px dashed var(--border)", background: "var(--bg-card)"}}
+            >
+                <Box size={48} style={{color: "var(--border-glow)", marginBottom: "12px"}} />
+                <p className="font-medium" style={{color: "var(--text-accent)"}}>
+                    {translation.summary.noData}
+                </p>
+                <p className="text-xs mt-1" style={{color: "var(--text-muted)"}}>
+                    {translation.summary.noDataHint}
+                </p>
+            </div>
+        );
+
+    const axisStyle = {fontSize: 11, fontFamily: "monospace"};
+    const gridStroke = "var(--border)";
+    const xColor = "var(--text-muted)";
+    const yColor = "var(--text-muted)";
+
+    const commonChart = (
+        <>
+            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+            <XAxis
+                dataKey="name"
+                stroke={xColor}
+                tick={{...axisStyle, fill: xColor}}
+                tickLine={false}
+                tickFormatter={xFormatter}
+                interval="preserveStartEnd"
+            />
+            <YAxis
+                stroke={yColor}
+                tick={{...axisStyle, fill: yColor}}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={yFormatter}
+                width={70}
+            />
+            <Tooltip content={<CustomTooltip />} cursor={{fill: "rgba(34,211,238,0.08)"}} />
+            <Legend wrapperStyle={{fontSize: "12px", paddingTop: "8px"}} />
+        </>
+    );
 
     return (
-        <div className="w-full h-[300px] lg:h-[500px] bg-[#0b0f1a] border border-cyan-400/30 rounded-xl py-3 px-1 shadow-[0_0_7px_rgba(34,211,238,0.6)] relative overflow-hidden">
-            {loading ? (
+        <div
+            className="w-full cyber-card overflow-hidden"
+            style={{height: "clamp(300px, 50vh, 520px)", padding: "16px 8px 8px"}}
+        >
+            {loadingCats ? (
                 <div className="flex h-full items-center justify-center">
-                    <LoaderCircle className="animate-spin text-cyan-400" size={39} />
+                    <LoaderCircle className="animate-spin" size={36} style={{color: "var(--text-accent)"}} />
                 </div>
             ) : (
                 <ResponsiveContainer width="100%" height="100%">
+                    {/*pie chart*/}
                     {chartMode === "pie" ? (
                         <PieChart>
                             <Pie
                                 data={chartData}
-                                dataKey="displayValue"
+                                dataKey="income"
                                 nameKey="name"
                                 cx="50%"
-                                cy="50%"
-                                innerRadius="70%"
-                                outerRadius="90%"
+                                cy="45%"
+                                innerRadius="55%"
+                                outerRadius="80%"
                                 paddingAngle={3}
-                            />
+                                label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                labelLine={{stroke: "var(--border-glow)"}}
+                            >
+                                {chartData.map((_, i) => (
+                                    <Cell key={i} fill={CYBER_COLORS[i % CYBER_COLORS.length]} />
+                                ))}
+                            </Pie>
                             <Tooltip content={<CustomTooltip />} />
-                            <Legend />
+                            <Legend wrapperStyle={{fontSize: "12px"}} />
                         </PieChart>
-                    ) : chartMode === "radar" ? (
-                        <RadarChart cx="50%" cy="50%" outerRadius="90%" data={chartData}>
-                            <PolarGrid stroke="#ff62e5" />
-                            <PolarAngleAxis dataKey="name" stroke="#39ff14" fontSize={9} />
-                            <Radar
-                                name="Value"
-                                dataKey="displayValue"
-                                stroke="#ffffff"
-                                fill="#00fff7"
-                                fillOpacity={0.9}
-                            />
+                    ) : /*radar chart*/
+                    chartMode === "radar" ? (
+                        <RadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData}>
+                            <PolarGrid stroke={gridStroke} />
+                            <PolarAngleAxis dataKey="name" tick={{fontSize: 11, fill: xColor}} />
+                            {valueKeys.map(vk => (
+                                <Radar
+                                    key={vk.key}
+                                    name={vk.name}
+                                    dataKey={vk.key}
+                                    stroke={vk.color}
+                                    fill={vk.color}
+                                    fillOpacity={0.25}
+                                />
+                            ))}
                             <Tooltip content={<CustomTooltip />} />
+                            <Legend wrapperStyle={{fontSize: "12px"}} />
                         </RadarChart>
                     ) : (
+                        /*composed chart*/
                         <ComposedChart data={chartData}>
                             <defs>
-                                <linearGradient id="cyberGrad" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="3%" stopColor="#8900ff" stopOpacity={0.7} />
-                                    <stop offset="90%" stopColor="#003c8f" stopOpacity={0.7} />
-                                </linearGradient>
+                                {valueKeys.map(vk => (
+                                    <linearGradient key={vk.key} id={`grad-${vk.key}`} x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor={vk.color} stopOpacity={0.6} />
+                                        <stop offset="95%" stopColor={vk.color} stopOpacity={0.05} />
+                                    </linearGradient>
+                                ))}
                             </defs>
+                            {commonChart}
 
-                            {commonAxes}
+                            {(chartMode === "area" || chartMode === "composed") &&
+                                valueKeys.map(vk => (
+                                    <Area
+                                        key={vk.key}
+                                        name={vk.name}
+                                        type="monotone"
+                                        dataKey={vk.key}
+                                        fill={`url(#grad-${vk.key})`}
+                                        stroke={vk.color}
+                                        strokeWidth={2}
+                                        dot={false}
+                                        activeDot={{r: 5, fill: vk.color}}
+                                    />
+                                ))}
 
-                            {(chartMode === "area" || chartMode === "composed") && (
-                                <Area
-                                    name={label}
-                                    type="monotone"
-                                    dataKey="displayValue"
-                                    fill="url(#cyberGrad)"
-                                    stroke="#22d3ee"
-                                    strokeWidth={2}
-                                />
-                            )}
+                            {(chartMode === "bar" || chartMode === "composed") &&
+                                valueKeys.map(vk => (
+                                    <Bar
+                                        key={vk.key}
+                                        name={vk.name}
+                                        dataKey={vk.key}
+                                        fill={vk.color}
+                                        barSize={14}
+                                        radius={[6, 6, 0, 0]}
+                                        opacity={0.85}
+                                    />
+                                ))}
 
-                            {(chartMode === "bar" || chartMode === "composed") && (
-                                <Bar name={label} dataKey="displayValue" barSize={12} radius={[9, 9, 0, 0]}>
-                                    {chartData.map((entry, i) => (
-                                        <Cell key={i} fill={entry.fill} />
-                                    ))}
-                                </Bar>
-                            )}
-
-                            {(chartMode === "line" || chartMode === "composed") && (
-                                <Line
-                                    name={label}
-                                    type="monotone"
-                                    dataKey="displayValue"
-                                    stroke="#ff1493"
-                                    strokeWidth={1}
-                                    dot={{r: 3, fill: "#00b3ff", strokeWidth: 1}}
-                                />
-                            )}
+                            {(chartMode === "line" || chartMode === "composed") &&
+                                valueKeys.map(vk => (
+                                    <Line
+                                        key={vk.key}
+                                        name={vk.name}
+                                        type="monotone"
+                                        dataKey={vk.key}
+                                        stroke={vk.color}
+                                        strokeWidth={2}
+                                        dot={{r: 3, fill: vk.color, strokeWidth: 1}}
+                                        activeDot={{r: 6}}
+                                    />
+                                ))}
                         </ComposedChart>
                     )}
                 </ResponsiveContainer>

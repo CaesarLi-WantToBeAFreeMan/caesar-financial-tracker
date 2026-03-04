@@ -1,84 +1,105 @@
-import React, {useContext, type ReactNode} from "react";
+import type {ReactNode} from "react";
+import {useContext, useMemo} from "react";
 import {UserContext} from "../context/UserContext";
-import {User, Tag, Banknote, ChartNoAxesCombined, UserCog} from "lucide-react";
+import {useI18n} from "../context/I18nContext";
 import {useNavigate} from "react-router-dom";
+import {User, Tag, Banknote, ChartNoAxesCombined, UserCog, Settings} from "lucide-react";
 
-interface MenuDataType {
-    label: string;
-    icon: ReactNode;
-    path: string;
-}
-
-interface SidebarPropsType {
+interface Props {
     setIsOpenSideMenu?: React.Dispatch<React.SetStateAction<boolean>>;
     activeRoute: string;
     isMobile?: boolean;
 }
 
-const menuData: MenuDataType[] = [
-    {label: "Profile", icon: <UserCog size={21} />, path: "/profile"},
-    {label: "Category", icon: <Tag size={21} />, path: "/category"},
-    {label: "Record", icon: <Banknote size={21} />, path: "/record"},
-    {label: "Summary", icon: <ChartNoAxesCombined size={21} />, path: "/summary"}
-];
-
-export default function Sidebar({setIsOpenSideMenu, activeRoute, isMobile}: SidebarPropsType) {
+export default function Sidebar({setIsOpenSideMenu, activeRoute, isMobile}: Props) {
     const context = useContext(UserContext);
+    const {translation} = useI18n();
     const navigate = useNavigate();
 
     if (!context) return null;
     const {user} = context;
 
+    const menuData = useMemo(
+        (): {label: string; icon: ReactNode; path: string}[] => [
+            {label: translation.nav.profile, icon: <UserCog size={20} />, path: "/profile"},
+            {label: translation.nav.category, icon: <Tag size={20} />, path: "/category"},
+            {label: translation.nav.record, icon: <Banknote size={20} />, path: "/record"},
+            {label: translation.nav.summary, icon: <ChartNoAxesCombined size={20} />, path: "/summary"}
+            // {label: translation.nav.settings, icon: <Settings size={20} />, path: "/settings"}
+        ],
+        [translation]
+    );
+
+    const handleNavigator = (path: string) => {
+        setIsOpenSideMenu?.(false);
+        navigate(path);
+    };
+
+    const baseClass = isMobile
+        ? "fixed inset-y-0 left-0 w-72 h-screen flex flex-col z-50"
+        : "hidden lg:flex flex-col w-64 sticky top-[68px] h-[calc(100vh-68px)]";
+
     return (
         <aside
-            className={`${isMobile ? "fixed inset-y-0 left-0 w-full bg-[#0a001f] h-screen flex flex-col z-120" : "hidden lg:flex flex-col w-64 sticky top-20"} p-3 transition duration-300`}
+            className={`${baseClass} p-3 overflow-hidden`}
+            style={{background: "var(--bg-surface)", borderRight: "1px solid var(--border)"}}
         >
+            {/*avatar*/}
             {user && (
-                <div className="flex flex-col items-center p-5 bg-black/40 rounded-2xl mb-8 border border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.1)]">
-                    <div className="w-20 h-20 rounded-full bg-cyan-950 flex items-center justify-center border-2 border-magenta-500/50 mb-4 overflow-hidden shadow-[0_0_10px_rgba(255,98,229,0.3)]">
+                <div
+                    className="flex flex-col items-center p-4 rounded-2xl mb-4 shrink-0"
+                    style={{background: "var(--bg-card)", border: "1px solid var(--border)"}}
+                >
+                    <div
+                        className="w-16 h-16 rounded-full flex items-center justify-center mb-3 overflow-hidden"
+                        style={{border: "2px solid var(--border-glow)"}}
+                    >
                         {user.profileImage ? (
-                            <img src={user.profileImage} alt="profile" className="w-full h-full object-cover" />
+                            <img src={user.profileImage} alt="avatar" className="w-full h-full object-cover" />
                         ) : (
-                            <User className="w-10 h-10 text-magenta-400" />
+                            <User size={28} style={{color: "var(--text-accent)"}} />
                         )}
                     </div>
-
-                    <div className="w-full min-w-0 text-center">
-                        <p className="text-cyan-400 font-bold text-lg truncate px-2">
-                            {user.firstName} {user.lastName}
-                        </p>
-                        <p className="text-xs text-slate-500 truncate font-mono">{user.email}</p>
-                    </div>
+                    <p className="font-bold text-base truncate px-1 text-center" style={{color: "var(--text-accent)"}}>
+                        {user.firstName} {user.lastName}
+                    </p>
+                    <p className="text-xs truncate font-mono mt-0.5" style={{color: "var(--text-muted)"}}>
+                        {user.email}
+                    </p>
                 </div>
             )}
 
-            <nav className="flex-1 space-y-3">
-                {menuData.map((item: MenuDataType) => {
+            {/*navigator*/}
+            <nav className="sidebar-nav">
+                {menuData.map(item => {
                     const isActive = activeRoute === item.label;
                     return (
                         <button
                             key={item.path}
-                            className={`
-                                w-full flex items-center gap-4 p-3.5 rounded-xl transition-all duration-300 group cursor-pointer ${isActive ? "bg-cyan-500/20 text-cyan-400 border border-cyan-400/50 shadow-[0_0_15px_rgba(34,211,238,0.2)]" : "text-slate-400 hover:bg-white/5 hover:text-cyan-300 border border-transparent"}`}
-                            onClick={() => {
-                                setIsOpenSideMenu?.(false);
-                                navigate(item.path);
+                            className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl transition-all duration-200 cursor-pointer group"
+                            style={{
+                                background: isActive ? "var(--bg-hover)" : "transparent",
+                                border: `1px solid ${isActive ? "var(--border-glow)" : "transparent"}`,
+                                boxShadow: isActive ? "var(--glow-cyan)" : "none",
+                                color: isActive ? "var(--text-accent)" : "var(--text-dim)"
                             }}
+                            onMouseEnter={e => {
+                                if (!isActive) e.currentTarget.style.background = "var(--bg-hover)";
+                            }}
+                            onMouseLeave={e => {
+                                if (!isActive) e.currentTarget.style.background = "transparent";
+                            }}
+                            onClick={() => handleNavigator(item.path)}
                         >
-                            <div
-                                className={`transition-transform duration-300 group-hover:scale-120 ${isActive ? "text-cyan-400" : "text-cyan-600"}`}
-                            >
+                            <span style={{color: isActive ? "var(--text-accent)" : "var(--text-muted)"}}>
                                 {item.icon}
-                            </div>
-
-                            <span
-                                className={`text-sm font-medium tracking-wide transition-colors ${isActive ? "text-cyan-300 font-bold" : "group-hover:text-cyan-200"}`}
-                            >
-                                {item.label}
                             </span>
-
+                            <span className="text-sm font-medium tracking-wide truncate">{item.label}</span>
                             {isActive && (
-                                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]" />
+                                <span
+                                    className="ml-auto w-1.5 h-1.5 rounded-full shrink-0"
+                                    style={{background: "var(--text-accent)", boxShadow: "0 0 8px var(--text-accent)"}}
+                                />
                             )}
                         </button>
                     );

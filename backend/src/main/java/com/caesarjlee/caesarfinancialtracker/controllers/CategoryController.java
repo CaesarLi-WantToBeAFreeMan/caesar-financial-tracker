@@ -1,14 +1,11 @@
 package com.caesarjlee.caesarfinancialtracker.controllers;
 
-import com.caesarjlee.caesarfinancialtracker.dtos.CategoryRequest;
-import com.caesarjlee.caesarfinancialtracker.dtos.CategoryResponse;
-import com.caesarjlee.caesarfinancialtracker.dtos.ImportResponse;
+import com.caesarjlee.caesarfinancialtracker.dtos.categories.*;
+import com.caesarjlee.caesarfinancialtracker.dtos.imports.ImportResponse;
 import com.caesarjlee.caesarfinancialtracker.services.CategoryService;
 
 import org.springframework.data.domain.Page;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -28,10 +25,10 @@ public class CategoryController {
 
     @GetMapping
     public ResponseEntity<Page<CategoryResponse>>
-    read(@RequestParam(defaultValue = "all") String type, @RequestParam(required = false) String name,
+    read(@RequestParam(defaultValue = "all") String type, @RequestParam(required = false) String keyword,
          @RequestParam(defaultValue = "CREATED_DESCENDING") String order, @RequestParam(defaultValue = "0") int page,
          @RequestParam(defaultValue = "30") int size) {
-        return ResponseEntity.ok(categoryService.read(type, name, order, page, size));
+        return ResponseEntity.ok(categoryService.read(type, keyword, order, page, size));
     }
 
     @GetMapping("/{id}")

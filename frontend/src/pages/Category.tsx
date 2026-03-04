@@ -1,8 +1,9 @@
 import Dashboard from "../components/Dashboard";
 import {useUser} from "../hooks/useUser";
+import {useI18n} from "../context/I18nContext";
 import ItemList from "../components/common/ItemList";
 import Pagination from "../components/common/Pagination";
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import axiosConfig from "../utilities/AxiosUtility";
 import {API_ENDPOINTS} from "../utilities/apiEndpoint";
 import toast from "react-hot-toast";
@@ -15,44 +16,33 @@ import HeaderBar from "../components/common/HeaderBar";
 
 export default function Category() {
     useUser();
-
-    const updateFilter = <K extends keyof CategoryFilter>(key: K, value: CategoryFilter[K]) =>
-        setFilter(previous => ({...previous, [key]: value}));
+    const {translation} = useI18n();
 
     const [page, setPage] = useState<CategoryPage | null>(null);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState<boolean>(false);
     const [filter, setFilter] = useState<CategoryFilter>({type: "all", order: "CREATED_ASCENDING", size: 30});
     const [index, setIndex] = useState<number>(0);
+    const [keyword, setKeyword] = useState<string>("");
 
-    //search
-    const [keyword, setKeyword] = useState("");
-
-    //modals
-    const [openImportModal, setOpenImportModal] = useState(false);
-    const [openCreateModal, setOpenCreateModal] = useState(false);
-    const [openUpdateModal, setOpenUpdateModal] = useState(false);
-    const [openDeleteModal, setOpenDeleteModal] = useState(false);
+    const [openImportModal, setOpenImportModal] = useState<boolean>(false);
+    const [openCreateModal, setOpenCreateModal] = useState<boolean>(false);
+    const [openUpdateModal, setOpenUpdateModal] = useState<boolean>(false);
+    const [openDeleteModal, setOpenDeleteModal] = useState<boolean>(false);
     const [selectedCategory, setSelectedCategory] = useState<CategoryData | null>(null);
 
-    //apis
-    const createCategory = async (category: CategoryData) => {
-        setOpenCreateModal(false);
-        try {
-            await axiosConfig.post(API_ENDPOINTS.CREATE_CATEGORY, category);
-            toast.success("Category Created");
-            readCategories();
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || "Created failed");
-        }
-    };
+    const updateFilter = useCallback(
+        <K extends keyof CategoryFilter>(key: K, value: CategoryFilter[K]) =>
+            setFilter(prev => ({...prev, [key]: value})),
+        []
+    );
 
-    const readCategories = async () => {
+    const readCategories = useCallback(async () => {
         setLoading(true);
         try {
             const response = await axiosConfig.get(API_ENDPOINTS.READ_CATEGORIES, {
                 params: {
-                    type: filter.type,
-                    name: keyword.trim() || undefined,
+                    type: filter.type === "all" ? null : filter.type,
+                    keyword: keyword.trim() || undefined,
                     order: filter.order,
                     page: index,
                     size: filter.size
@@ -67,77 +57,103 @@ export default function Category() {
                 first: response.data.first,
                 last: response.data.last
             });
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || "Fetch categories failed");
+        } catch (e: any) {
+            toast.error(e?.response?.data?.message || translation.category.fetchFailed);
         } finally {
             setLoading(false);
         }
-    };
+    }, [filter, index, keyword, translation]);
 
-    const updateCategory = async (category: CategoryData) => {
-        if (!category.id) return;
-        try {
-            await axiosConfig.put(API_ENDPOINTS.UPDATE_CATEGORY.replace("{id}", String(category.id)), category);
-            toast.success("Updated successfully");
-            readCategories();
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || "Update failed");
-        } finally {
-            setOpenUpdateModal(false);
-        }
-    };
+    const createCategory = useCallback(
+        async (category: CategoryData) => {
+            setOpenCreateModal(false);
+            try {
+                await axiosConfig.post(API_ENDPOINTS.CREATE_CATEGORY, category);
+                toast.success(translation.category.createSuccess);
+                readCategories();
+            } catch (e: any) {
+                toast.error(e?.response?.data?.message || translation.category.createFailed);
+            }
+        },
+        [readCategories, translation]
+    );
 
-    const deleteCategory = async (id: number) => {
-        try {
-            await axiosConfig.delete(API_ENDPOINTS.DELETE_CATEGORY.replace("{id}", String(id)));
-            toast.success("Category deleted");
-            readCategories();
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || "Deleted failed");
-        } finally {
-            setOpenDeleteModal(false);
-        }
-    };
+    const updateCategory = useCallback(
+        async (category: CategoryData) => {
+            if (!category.id) return;
+            try {
+                await axiosConfig.put(API_ENDPOINTS.UPDATE_CATEGORY.replace("{id}", String(category.id)), category);
+                toast.success(translation.category.updateSuccess);
+                readCategories();
+            } catch (e: any) {
+                toast.error(e?.response?.data?.message || translation.category.updateFailed);
+            } finally {
+                setOpenUpdateModal(false);
+            }
+        },
+        [readCategories, translation]
+    );
+
+    const deleteCategory = useCallback(
+        async (id: number) => {
+            try {
+                await axiosConfig.delete(API_ENDPOINTS.DELETE_CATEGORY.replace("{id}", String(id)));
+                toast.success(translation.category.deleteSuccess);
+                readCategories();
+            } catch (e: any) {
+                toast.error(e?.response?.data?.message || translation.category.deleteFailed);
+            } finally {
+                setOpenDeleteModal(false);
+            }
+        },
+        [readCategories, translation]
+    );
 
     useEffect(() => {
         readCategories();
     }, [filter, index, keyword]);
 
     return (
-        <Dashboard activeRoute="Category">
-            <div className="mx-auto my-6">
+        <Dashboard activeRoute={translation.nav.category}>
+            <div className="mx-auto my-4 space-y-4">
                 <HeaderBar
-                    title="All Categories"
+                    title={translation.category.title}
                     setOpenImportModal={setOpenImportModal}
                     setOpenCreateModal={setOpenCreateModal}
                 />
 
                 <Filter filter={filter} onChange={updateFilter} />
 
-                <SearchBar keyword={keyword} setKeyword={setKeyword} placeholder="Search categories..." />
+                <SearchBar
+                    keyword={keyword}
+                    setKeyword={setKeyword}
+                    placeholder={translation.category.searchPlaceholder}
+                />
 
                 {loading ? (
                     <div className="flex items-center justify-center py-20">
-                        <LoaderCircle size={39} className="animate-spin text-cyan-400" />
+                        <LoaderCircle size={38} className="animate-spin" style={{color: "var(--text-accent)"}} />
                     </div>
                 ) : (
                     page && (
                         <>
                             <ItemList
-                                title="Categories Source"
+                                title={translation.category.title}
                                 items={page.content}
                                 totalElements={page.totalElements}
-                                onEdit={(id: number) => {
-                                    const category = page?.content.find((c: CategoryData) => c.id === id);
-                                    if (!category) return;
-                                    setSelectedCategory(category);
-                                    setOpenUpdateModal(true);
+                                onEdit={id => {
+                                    const c = page.content.find((c: CategoryData) => c.id === id);
+                                    if (c) {
+                                        setSelectedCategory(c);
+                                        setOpenUpdateModal(true);
+                                    }
                                 }}
-                                onDelete={(id: number) => {
-                                    const category = page?.content.find((c: CategoryData) => c.id === id);
-                                    if (!category) return;
-                                    setSelectedCategory(category);
-                                    setOpenDeleteModal(true);
+                                onDelete={id => {
+                                    const c = page.content.find((c: CategoryData) => c.id === id);
+                                    if (c) {
+                                        setSelectedCategory(c);
+                                        setOpenDeleteModal(true);
+                                    }
                                 }}
                             />
                             <Pagination page={page.number} totalPages={page.totalPages} onChange={setIndex} />
@@ -145,11 +161,18 @@ export default function Category() {
                     )
                 )}
 
-                <Modal isOpen={openCreateModal} onClose={() => setOpenCreateModal(false)} title="Add Category">
+                <Modal
+                    isOpen={openCreateModal}
+                    onClose={() => setOpenCreateModal(false)}
+                    title={translation.category.create}
+                >
                     <Create onAddCategory={createCategory} />
                 </Modal>
-
-                <Modal isOpen={openImportModal} onClose={() => setOpenImportModal(false)} title="Import Categories">
+                <Modal
+                    isOpen={openImportModal}
+                    onClose={() => setOpenImportModal(false)}
+                    title={translation.category.import}
+                >
                     <Import
                         onClose={() => {
                             setOpenImportModal(false);
@@ -157,15 +180,21 @@ export default function Category() {
                         }}
                     />
                 </Modal>
-
                 {selectedCategory && (
-                    <Modal isOpen={openUpdateModal} onClose={() => setOpenUpdateModal(false)} title="Update Category">
+                    <Modal
+                        isOpen={openUpdateModal}
+                        onClose={() => setOpenUpdateModal(false)}
+                        title={translation.category.update}
+                    >
                         <Update category={selectedCategory} onUpdateCategory={updateCategory} />
                     </Modal>
                 )}
-
                 {selectedCategory && (
-                    <Modal isOpen={openDeleteModal} onClose={() => setOpenDeleteModal(false)} title="Delete Category">
+                    <Modal
+                        isOpen={openDeleteModal}
+                        onClose={() => setOpenDeleteModal(false)}
+                        title={translation.category.delete}
+                    >
                         <Delete
                             category={selectedCategory}
                             onCancel={() => setOpenDeleteModal(false)}
