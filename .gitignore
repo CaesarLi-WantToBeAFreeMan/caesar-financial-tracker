@@ -71,6 +71,7 @@ backend/src/main/resources/application-prod.yml
 #environment files
 .env
 .env.local
+.env.production
 .env.*
 *.env
 
@@ -80,7 +81,6 @@ database/*.dump
 database/*.bak
 
 #docker
-Dockerfile
 docker-compose.yml
 .dockerignore
 

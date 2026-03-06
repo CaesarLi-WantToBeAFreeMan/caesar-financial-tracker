@@ -238,7 +238,7 @@ export default function ChartViewer({data, chartMode, divisionMode}: Props) {
                                 innerRadius="55%"
                                 outerRadius="80%"
                                 paddingAngle={3}
-                                label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                label={({name, percent}) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                                 labelLine={{stroke: "var(--border-glow)"}}
                             >
                                 {chartData.map((_, i) => (

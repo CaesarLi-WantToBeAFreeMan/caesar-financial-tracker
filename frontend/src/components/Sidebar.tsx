@@ -3,7 +3,7 @@ import {useContext, useMemo} from "react";
 import {UserContext} from "../context/UserContext";
 import {useI18n} from "../context/I18nContext";
 import {useNavigate} from "react-router-dom";
-import {User, Tag, Banknote, ChartNoAxesCombined, UserCog, Settings} from "lucide-react";
+import {User, Tag, Banknote, ChartNoAxesCombined, UserCog} from "lucide-react";
 
 interface Props {
     setIsOpenSideMenu?: React.Dispatch<React.SetStateAction<boolean>>;

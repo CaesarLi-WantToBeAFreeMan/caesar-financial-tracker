@@ -3,10 +3,10 @@ import {enUS} from "../i18n/en-US";
 import {enUK} from "../i18n/en-UK";
 import {zhTW} from "../i18n/zh-TW";
 import {zhCN} from "../i18n/zh-CN";
+import type {TranslationType} from "../types/TranslationType";
 
 //types
 export type Locale = "en-US" | "en-UK" | "zh-TW" | "zh-CN";
-export type Translations = typeof enUS;
 
 export interface LocaleOption {
     value: Locale;
@@ -22,12 +22,12 @@ export const LOCALE_OPTIONS: LocaleOption[] = [
     {value: "zh-CN", label: "中文（中国）", flag: "🇨🇳"}
 ];
 
-const locales: Record<Locale, Translations> = {"en-US": enUS, "en-UK": enUK, "zh-TW": zhTW, "zh-CN": zhCN};
+const locales: Record<Locale, TranslationType> = {"en-US": enUS, "en-UK": enUK, "zh-TW": zhTW, "zh-CN": zhCN};
 
 //contexts
 interface I18nContextType {
     locale: Locale;
-    translation: Translations;
+    translation: TranslationType;
     setLocale: (locale: Locale) => void;
 }
 

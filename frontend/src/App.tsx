@@ -14,7 +14,6 @@ import Profile from "./pages/Profile";
 import Category from "./pages/Category";
 import Record from "./pages/Record";
 import Summary from "./pages/Summary";
-import Settings from "./pages/Settings";
 
 function AuthRedirect() {
     return !!localStorage.getItem("token") ? <Navigate to="/profile" replace /> : <Navigate to="/home" replace />;
