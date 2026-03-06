@@ -1,19 +1,33 @@
 spring:
-    profiles:
-        # active: local #active local configuration
-        active: prod #active production configuration
+    profile:
+        active: ${SPRING_PROFILES__ACTIVE:local} #render injects this, and load local configurations 4 development
     jackson:
         property-naming-strategy: SNAKE_CASE
+    datasource:
+        driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME}
+        url: ${SPRING_DATASOURCE_URL}
+        username: ${SPRING_DATASOURCE_USERNAME}
+        password: ${SPRING_DATASOURCE_PASSWORD}
     jpa:
+        hibernate:
+            ddl-auto: ${DDL_AUTO:update} #auto generate SQL statements
         properties:
             hibernate:
                 format_sql: true #format SQL statements
+        #render injects show-sql, and show SQL statements 4 development
+        show-sql: ${SHOW_SQL:true}
+        database-platform: ${SPRING_JPA_DATABASE_PLATFORM}
 
 server:
-    port: 1989
-    servlet:
-        context-path: /api/alpha.1.0
+    port:
+        #render injects PORT, and use port 1989 for development
+        ${PORT:1989} #memorize Tiananmen Square protests that happened in June 4, 1989
+    serverlet:
+        context-path: /api/alpha #API path for version alpha
 
 app:
     cors:
-        allowed-origins: http://localhost:5173, https://www.caesaris.net
+        allowed-origins: http://localhost:5173, https://caesaris.net #developed and deployed locations
+
+jwt:
+    secret: ${JWT_SECRET}
