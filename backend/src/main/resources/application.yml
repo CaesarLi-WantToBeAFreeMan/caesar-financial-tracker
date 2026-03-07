@@ -26,7 +26,7 @@ server:
 
 app:
     cors:
-        allowed-origins: http://localhost:5173, https://caesaris.net #developed and deployed locations
+        allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173} #developed and deployed locations
 
 jwt:
     secret: ${JWT_SECRET}
