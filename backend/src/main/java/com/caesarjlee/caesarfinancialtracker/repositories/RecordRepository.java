@@ -11,34 +11,42 @@ import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
 public interface RecordRepository extends JpaRepository <RecordEntity, Long> {
+    /*
+        SELECT * FROM cft_records
+            WHERE id = ? AND profile_id = ?
+    */
     Optional <RecordEntity> findByIdAndProfileId(Long id, Long profileId);
+    /*
+        SELECT * FROM cft_records
+            WHERE profile_id = ?
+    */
     List <RecordEntity> findByProfileId(Long profileId);
+    /*
+        SELECT r.* FROM cft_records r
+            JOIN cft_categories c ON c.id = r.category_id
+            WHERE r.profile_id = ?
+                AND (? IS NULL OR LOWER(r.name) LIKE LOWER(CONCAT('%', ?, '%')))
+                AND (? IS NULL OR c.type = ?)
+                AND (? IS NULL OR c.category_id = ?)
+                AND (? IS NULL OR r.date >= ?)
+                AND (? IS NULL OR r.date <= ?)
+                AND (? IS NULL OR r.price >= ?)
+                AND (? IS NULL OR r.price <= ?)
+            ORDER BY ? ASC/DESC
+            LIMIT ? OFFSET ?
+    */
     @Query(
-        value = """
-            SELECT r.* FROM cft_records r
-            JOIN cft_categories c ON c.id = r.category_id
-            WHERE r.profile_id = :profileId
-                AND (:keyword                       IS NULL OR LOWER(r.name)    LIKE :keyword)
-                AND (:type                          IS NULL OR LOWER(c.type)    =   :type)
-                AND (CAST(:categoryId AS BIGINT)    IS NULL OR r.category_id    =   :categoryId)
-                AND (CAST(:dateStart  AS DATE)      IS NULL OR r.date           >=  :dateStart)
-                AND (CAST(:dateEnd    AS DATE)      IS NULL OR r.date           <=  :dateEnd)
-                AND (CAST(:priceLow   AS NUMERIC)   IS NULL OR r.price          >=  :priceLow)
-                AND (CAST(:priceHigh  AS NUMERIC)   IS NULL OR r.price          <=  :priceHigh)
-        """,
-        countQuery = """
-            SELECT COUNT(*) FROM cft_records r
-            JOIN cft_categories c ON c.id = r.category_id
-            WHERE r.profile_id = :profileId
-                AND (:keyword                       IS NULL OR LOWER(r.name)    LIKE :keyword)
-                AND (:type                          IS NULL OR LOWER(c.type)    =   :type)
-                AND (CAST(:categoryId AS BIGINT)    IS NULL OR r.category_id    =   :categoryId)
-                AND (CAST(:dateStart  AS DATE)      IS NULL OR r.date           >=  :dateStart)
-                AND (CAST(:dateEnd    AS DATE)      IS NULL OR r.date           <=  :dateEnd)
-                AND (CAST(:priceLow   AS NUMERIC)   IS NULL OR r.price          >=  :priceLow)
-                AND (CAST(:priceHigh  AS NUMERIC)   IS NULL OR r.price          <=  :priceHigh)
-        """,
-        nativeQuery = true
+        """
+            SELECT r FROM RecordEntity r
+                WHERE r.profile.id = :profileId
+                    AND (:name          IS NULL OR LOWER(r.name)    LIKE LOWER(CONCAT('%', :name, '%')))
+                    AND (:type          IS NULL OR r.category.type  = :type)
+                    AND (:categoryId    IS NULL OR r.category.id    = :categoryId)
+                    AND (:dateStart     IS NULL OR r.date           >= :dateStart)
+                    AND (:dateEnd       IS NULL OR r.date           <= :dateEnd)
+                    AND (:priceLow      IS NULL OR r.price          >= :priceLow)
+                    AND (:priceHigh     IS NULL OR r.price          <= :priceHigh)
+        """
     )
     Page<RecordEntity> search(@Param("profileId") Long profileId,
                               @Param("keyword") String keyword,
@@ -49,20 +57,31 @@ public interface RecordRepository extends JpaRepository <RecordEntity, Long> {
                               @Param("priceLow") BigDecimal priceLow,
                               @Param("priceHigh") BigDecimal priceHigh,
                               Pageable pageable);
-    @Query(
-        value = """
-            SELECT r.* FROM cft_records r
+    /*
+        SELECT r.* FROM cft_records r
             JOIN cft_categories c ON c.id = r.category_id
-            WHERE r.profile_id = :profileId
-                AND (:type                          IS NULL OR LOWER(c.type)    =    :type)
-                AND (CAST(:dateStart  AS DATE)      IS NULL OR r.date           >=   :dateStart)
-                AND (CAST(:dateEnd    AS DATE)      IS NULL OR r.date           <=   :dateEnd)
-                AND (CAST(:priceLow   AS NUMERIC)   IS NULL OR r.price          >=   :priceLow)
-                AND (CAST(:priceHigh  AS NUMERIC)   IS NULL OR r.price          <=   :priceHigh)
-                AND (:skipCategories  = true        OR r.category_id            IN   (:categories))
-                AND (:keyword                       IS NULL OR LOWER(r.name)    LIKE :keyword)
-        """,
-        nativeQuery = true
+            WHERE r.profile_id = ?
+                AND (? IS NULL OR c.type = ?)
+                AND (? IS NULL OR r.date >= ?)
+                AND (? IS NULL OR r.date <= ?)
+                AND (? IS NULL OR r.price >= ?)
+                AND (? IS NULL OR r.price <= ?)
+                AND (? IS NULL OR r.category_id IN (?, ...))
+                AND (? IS NULL OR LOWER(r.name) LIKE LOWER(CONCAT('%', ?, '%')))
+    */
+    @Query(
+        """
+            SELECT r FROM RecordEntity r
+            WHERE r.profile.id = :profileId
+                AND (:type      IS NULL OR r.category.type          =   :type)
+                AND (:dateStart IS NULL OR r.date                       >= :dateStart)
+                AND (:dateEnd   IS NULL OR r.date                       <= :dateEnd)
+                AND (:priceLow  IS NULL OR r.price                      >= :priceLow)
+                AND (:priceHigh IS NULL OR r.price                      <= :priceHigh)
+                AND (:#{#categories == null || #categories.isEmpty()}   = true
+                                        OR r.category.id                IN :categories)
+                AND (:name      IS NULL OR LOWER(r.name)                LIKE LOWER(CONCAT('%', :name, '%')))
+        """
     )
     List <RecordEntity> searchAll(@Param("profileId") Long profileId,
                                   @Param("type") String type,

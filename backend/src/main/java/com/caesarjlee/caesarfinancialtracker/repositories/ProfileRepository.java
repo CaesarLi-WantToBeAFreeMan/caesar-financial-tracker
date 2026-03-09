@@ -7,9 +7,16 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface ProfileRepository extends JpaRepository<ProfileEntity, Long> {
-    //SELECT * FROM cft_profiles WHERE email = ?
+    /*
+        SELECT * FROM cft_profiles
+            WHERE email = ?
+    */
     Optional<ProfileEntity> findByEmail(String email);
-
-    //SELECT EXISTS(SELECT 1 FROM cft_profiles p WHERE p.email = ?)
+    /*
+        SELECT EXISTS(
+            SELECT 1 FROM cft_profiles
+                WHERE email = ?
+        )
+    */
     boolean                 existsByEmail(String email);
 }

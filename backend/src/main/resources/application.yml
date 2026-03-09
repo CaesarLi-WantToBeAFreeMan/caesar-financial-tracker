@@ -1,10 +1,8 @@
 spring:
-    profiles:
-        active: ${SPRING_PROFILES_ACTIVE:local} #render injects this, and load local configurations 4 development
     jackson:
         property-naming-strategy: SNAKE_CASE
     datasource:
-        driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME}
+        driver-class-name: com.mysql.cj.jdbc.Driver
         url: ${SPRING_DATASOURCE_URL}
         username: ${SPRING_DATASOURCE_USERNAME}
         password: ${SPRING_DATASOURCE_PASSWORD}
