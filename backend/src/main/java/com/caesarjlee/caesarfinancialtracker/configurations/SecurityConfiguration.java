@@ -36,7 +36,9 @@ public class SecurityConfiguration {
             .authorizeHttpRequests(
                 authentication
                 -> authentication
-                       .requestMatchers(HttpMethod.POST, "/profiles/register", "/profiles/login")// public endpoints
+                       .requestMatchers(HttpMethod.OPTIONS, "/**")
+                       .permitAll()
+                       .requestMatchers(HttpMethod.POST, "/api/alpha/profiles/register", "/api/alpha/profiles/login")// public endpoints
                        .permitAll()
                        .anyRequest()// everything else requires JWT
                        .authenticated())
