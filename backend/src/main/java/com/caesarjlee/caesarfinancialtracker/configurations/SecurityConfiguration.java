@@ -34,14 +34,13 @@ public class SecurityConfiguration {
             .sessionManagement(
                 session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(
-                authentication
-                -> authentication
-                       .requestMatchers(HttpMethod.OPTIONS, "/**")
-                       .permitAll()
-                       .requestMatchers(HttpMethod.POST, "/api/alpha/profiles/register", "/api/alpha/profiles/login")// public endpoints
-                       .permitAll()
-                       .anyRequest()// everything else requires JWT
-                       .authenticated())
+                authentication -> authentication
+                    .requestMatchers(HttpMethod.OPTIONS, "/**")//allow CORS preflight for all endpoints
+                    .permitAll()
+                    .requestMatchers(HttpMethod.POST, "/profiles/register", "/profiles/login")
+                    .permitAll()
+                    .anyRequest()// everything else requires JWT
+                    .authenticated())
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);// JWT filter
         return httpSecurity.build();

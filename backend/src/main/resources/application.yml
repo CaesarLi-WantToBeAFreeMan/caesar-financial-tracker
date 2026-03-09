@@ -12,19 +12,16 @@ spring:
         properties:
             hibernate:
                 format_sql: true #format SQL statements
-        #render injects show-sql, and show SQL statements 4 development
         show-sql: ${SHOW_SQL:false}
-        database-platform: ${SPRING_JPA_DATABASE_PLATFORM}
 
 server:
-    #render injects PORT, and use port 1989 for development
     port: ${PORT:1989} #memorize Tiananmen Square protests that happened in June 4, 1989
     servlet:
         context-path: /api/alpha #API path for version alpha
 
 app:
     cors:
-        allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173} #developed and deployed locations
+        allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
 
 jwt:
     secret: ${JWT_SECRET}
