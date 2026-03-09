@@ -19,7 +19,7 @@ spring:
 server:
     #render injects PORT, and use port 1989 for development
     port: ${PORT:1989} #memorize Tiananmen Square protests that happened in June 4, 1989
-    servelet:
+    servlet:
         context-path: /api/alpha #API path for version alpha
 
 app:
