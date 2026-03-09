@@ -53,7 +53,7 @@ public interface CategoryRepository extends JpaRepository<CategoryEntity, Long> 
             SELECT c FROM CategoryEntity c
                 WHERE c.profile.id = :profileId
                     AND (:type IS NULL OR c.type = :type)
-                    AND (:name IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :name, '%')))
+                    AND (:keyword IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
         """
     )
     Page <CategoryEntity>     search(@Param("profileId") Long profileId, @Param("type") String type,

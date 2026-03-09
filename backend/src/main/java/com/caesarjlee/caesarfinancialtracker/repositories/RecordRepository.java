@@ -39,7 +39,7 @@ public interface RecordRepository extends JpaRepository <RecordEntity, Long> {
         """
             SELECT r FROM RecordEntity r
                 WHERE r.profile.id = :profileId
-                    AND (:name          IS NULL OR LOWER(r.name)    LIKE LOWER(CONCAT('%', :name, '%')))
+                    AND (:keyword       IS NULL OR LOWER(r.name)    LIKE LOWER(CONCAT('%', :keyword, '%')))
                     AND (:type          IS NULL OR r.category.type  = :type)
                     AND (:categoryId    IS NULL OR r.category.id    = :categoryId)
                     AND (:dateStart     IS NULL OR r.date           >= :dateStart)
@@ -80,7 +80,7 @@ public interface RecordRepository extends JpaRepository <RecordEntity, Long> {
                 AND (:priceHigh IS NULL OR r.price                      <= :priceHigh)
                 AND (:#{#categories == null || #categories.isEmpty()}   = true
                                         OR r.category.id                IN :categories)
-                AND (:name      IS NULL OR LOWER(r.name)                LIKE LOWER(CONCAT('%', :name, '%')))
+                AND (:keyword   IS NULL OR LOWER(r.name)                LIKE LOWER(CONCAT('%', :keyword, '%')))
         """
     )
     List <RecordEntity> searchAll(@Param("profileId") Long profileId,
