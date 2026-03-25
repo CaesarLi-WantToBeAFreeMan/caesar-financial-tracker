@@ -1,12 +1,12 @@
 package com.caesarjlee.caesarfinancialtracker.services;
 
-import com.caesarjlee.caesarfinancialtracker.dtos.records.*;
 import com.caesarjlee.caesarfinancialtracker.dtos.imports.ImportResponse;
+import com.caesarjlee.caesarfinancialtracker.dtos.records.*;
 import com.caesarjlee.caesarfinancialtracker.entities.*;
 import com.caesarjlee.caesarfinancialtracker.enumerations.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.categories.CategoryNotFoundException;
-import com.caesarjlee.caesarfinancialtracker.exceptions.records.*;
 import com.caesarjlee.caesarfinancialtracker.exceptions.pages.PageSizeException;
+import com.caesarjlee.caesarfinancialtracker.exceptions.records.*;
 import com.caesarjlee.caesarfinancialtracker.repositories.*;
 import com.caesarjlee.caesarfinancialtracker.utilities.*;
 
@@ -18,7 +18,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -30,11 +29,11 @@ public class RecordService {
     private final ImportFiles        importFiles;
     private final ExportFiles        exportFiles;
 
-    //helpers
+    // helpers
     private RecordResponse           toResponse(RecordEntity entity) {
-        return new RecordResponse(entity.getId(), entity.getName(), entity.getType(), entity.getIcon(), entity.getDate(),
-                                    entity.getPrice(), entity.getDescription(), entity.getCreatedAt(),
-                                    entity.getUpdatedAt(), entity.getCategory().getId());
+        return new RecordResponse(entity.getId(), entity.getName(), entity.getType(), entity.getIcon(),
+                                  entity.getDate(), entity.getPrice(), entity.getDescription(), entity.getCreatedAt(),
+                                  entity.getUpdatedAt(), entity.getCategory().getId());
     }
 
     private RecordOrders validOrder(String order) {
@@ -52,12 +51,12 @@ public class RecordService {
     }
 
     private void validate(LocalDate start, LocalDate end, BigDecimal low, BigDecimal high) {
-        //dates
+        // dates
         if(end != null && end.isAfter(LocalDate.now()))
             throw new InvalidRecordDateException(end + " must be <= " + LocalDate.now());
         if(start != null && end != null && start.isAfter(end))
             throw new InvalidRecordDateException(start + " must be <= " + end);
-        //prices
+        // prices
         if(low != null && low.compareTo(BigDecimal.ZERO) < 0)
             throw new InvalidRecordPriceException(low + " must be >= 0");
         if(high != null && high.compareTo(BigDecimal.ZERO) < 0)
@@ -66,15 +65,15 @@ public class RecordService {
             throw new InvalidRecordPriceException(low + " must be <= " + high);
     }
 
-    private static String toKeyword(String keyword){
+    private static String toKeyword(String keyword) {
         return keyword == null || keyword.isBlank() ? null : "%" + keyword.toLowerCase() + "%";
     }
 
-    private static String toType(String type){
+    private static String toType(String type) {
         return type == null || type.isBlank() || "all".equalsIgnoreCase(type) ? null : type.toLowerCase();
     }
 
-    //crud
+    // crud
     public RecordResponse create(RecordRequest request) {
         Long           profileId = profileService.getCurrentProfile().getId();
         CategoryEntity category =
@@ -98,15 +97,18 @@ public class RecordService {
                                      LocalDate dateEnd, BigDecimal priceLow, BigDecimal priceHigh, int page, int size) {
         validate(dateStart, dateEnd, priceLow, priceHigh);
         return recordRepository
-            .search(profileService.getCurrentProfile().getId(), toKeyword(keyword), toType(type), categoryId, dateStart, dateEnd, priceLow,
-                    priceHigh, validPage(order, page, size))
+            .search(profileService.getCurrentProfile().getId(), toKeyword(keyword), toType(type), categoryId, dateStart,
+                    dateEnd, priceLow, priceHigh, validPage(order, page, size))
             .map(this::toResponse);
     }
 
-    public List <RecordResponse> readAll(String type, LocalDate dateStart, LocalDate dateEnd, BigDecimal priceLow, BigDecimal priceHigh, List <Long> categories, String keyword){
+    public List<RecordResponse> readAll(String type, LocalDate dateStart, LocalDate dateEnd, BigDecimal priceLow,
+                                        BigDecimal priceHigh, List<Long> categories, String keyword) {
         validate(dateStart, dateEnd, priceLow, priceHigh);
-        boolean skipCategories = categories == null || categories.isEmpty();
-        return recordRepository.searchAll(profileService.getCurrentProfile().getId(), toType(type), dateStart, dateEnd, priceLow, priceHigh, skipCategories, skipCategories ? List.of(-1L) : categories, keyword)
+        List<Long> categoryFilter = (categories == null || categories.isEmpty()) ? null : categories;
+        return recordRepository
+            .searchAll(profileService.getCurrentProfile().getId(), toType(type), dateStart, dateEnd, priceLow,
+                       priceHigh, categoryFilter, keyword)
             .stream()
             .map(this::toResponse)
             .collect(Collectors.toList());
@@ -114,7 +116,7 @@ public class RecordService {
 
     public RecordResponse update(Long id, RecordRequest request) {
         RecordEntity entity = recordRepository.findByIdAndProfileId(id, profileService.getCurrentProfile().getId())
-                                            .orElseThrow(() -> new RecordNotFoundException(request.name()));
+                                  .orElseThrow(() -> new RecordNotFoundException(request.name()));
         entity.setName(request.name());
         entity.setType(request.type() == null ? entity.getType() : request.type());
         entity.setIcon(request.icon() == null ? entity.getIcon() : request.icon());
@@ -125,13 +127,13 @@ public class RecordService {
             request.categoryId() == null
                 ? entity.getCategory()
                 : categoryRepository.findById(request.categoryId())
-                                    .orElseThrow(() -> new CategoryNotFoundException(Long.toString(request.categoryId()))));
+                      .orElseThrow(() -> new CategoryNotFoundException(Long.toString(request.categoryId()))));
         return toResponse(recordRepository.save(entity));
     }
 
     public void delete(Long id) {
         recordRepository.delete(recordRepository.findByIdAndProfileId(id, profileService.getCurrentProfile().getId())
-                                                .orElseThrow(() -> new RecordNotFoundException(Long.toString(id))));
+                                    .orElseThrow(() -> new RecordNotFoundException(Long.toString(id))));
     }
 
     public ImportResponse importRecord(MultipartFile file) {
