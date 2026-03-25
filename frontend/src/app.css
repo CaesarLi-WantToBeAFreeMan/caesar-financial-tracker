@@ -1,74 +1,118 @@
 @import "tailwindcss";
 
-/*font size*/
+/*cyberpunk color variables*/
 :root {
-    --base-font-size: 16px;
-    --font-mono: "Courier New", "Cascadia Code", monospace;
+    --cp-dark: #282c34;
+    --cp-light: #fbf6f0;
+    --cp-dark-magenta: #ff007f;
+    --cp-light-magenta: #ff0099;
+    --cp-dark-red: #ff4500;
+    --cp-light-red: #fd1c03;
+    --cp-dark-orange: #f5a623;
+    --cp-light-orange: #ffb000;
+    --cp-dark-pink: #ff1493;
+    --cp-light-pink: #ff62e5;
+    --cp-dark-green: #00ff00;
+    --cp-light-green: #39ff14;
+    --cp-dark-blue: #003c8f;
+    --cp-light-blue: #0033ff;
+    --cp-dark-cyan: #00fff7;
+    --cp-light-cyan: #0ff0fc;
+    --cp-dark-violet: #8b00ff;
+    --cp-light-violet: #d400ff;
+    --cp-dark-purple: #9900ff;
+    --cp-light-purple: #8500f3;
+
+    --base-font-size: 12px;
 }
+
 html {
     font-size: var(--base-font-size);
 }
 
-/*scroll bar*/
+/*scrollbar*/
 ::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+    width: 4px;
+    height: 4px;
 }
+
 ::-webkit-scrollbar-track {
     background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
-    background: rgba(34, 211, 238, 0.3);
+    background: rgb(from var(--cp-dark-blue) r g b / 0.3);
     border-radius: 999px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(34, 211, 238, 0.6);
+    background: rgb(from var(--cp-dark-blue) r g b / 0.5);
 }
+
 ::-webkit-scrollbar-corner {
     background: transparent;
 }
+
 * {
     scrollbar-width: thin;
-    scrollbar-color: rgba(34, 211, 238, 0.35) transparent;
+    scrollbar-color: rgb(from var(--cp-dark-blue) r g b / 0.3) transparent;
 }
 
-/*dark cyberpunk*/
+/*dark cyberpunk variables*/
 html.dark {
-    --bg-base: #070f34;
-    --bg-surface: #0a001f;
-    --bg-card: rgba(0, 0, 0, 0.4);
-    --bg-hover: rgba(255, 255, 255, 0.05);
-    --border: rgba(34, 211, 238, 0.25);
-    --border-glow: rgba(34, 211, 238, 0.5);
-    --text-primary: #e2e8f0;
-    --text-accent: #22d3ee;
-    --text-muted: #64748b;
-    --text-dim: #94a3b8;
-    --glow-cyan: 0 0 20px rgba(34, 211, 238, 0.4);
-    --glow-purple: 0 0 20px rgba(153, 0, 255, 0.4);
-    --input-bg: rgba(0, 0, 0, 0.6);
-    --shadow: 0 3px 23px rgba(0, 0, 0, 0.6);
+    --bg-base: var(--cp-dark);
+    --bg-surface: rgb(from var(--cp-dark) r g b / 0.7);
+    --bg-card: rgb(from var(--cp-dark) r g b / 0.5);
+    --bg-hover: rgb(from var(--cp-dark-violet) r g b / 0.3);
+    --bg-btn: rgb(from var(--cp-dark-cyan) r g b / 0.7);
+    --bg-input: rgb(from var(--cp-dark-blue) r g b / 0.7);
+    --bg-dropdown: rgb(from var(--cp-dark) r g b / 0.9);
+    --bg-error: rgb(from var(--cp-dark-red) r g b / 0.3);
+    --bg-warning: rgb(from var(--cp-dark-orange) r g b / 0.3);
+    --border: rgb(from var(--cp-dark-cyan) r g b / 0.3);
+    --border-glow: rgb(from var(--cp-dark-cyan) r g b / 0.5);
+    --text-primary: var(--cp-light);
+    --text-accent: var(--cp-dark-cyan);
+    --text-muted: #c5c6d0;
+    --text-dim: var(--cp-dark-red);
+    --text-btn: var(--cp-dark-purple);
+    --text-heading: var(--cp-dark-magenta);
+    --text-correct: var(--cp-dark-green);
+    --text-wrong: var(--cp-dark-red);
+    --text-warning: var(--cp-dark-orange);
+    --glow-cyan: 0 0 16px rgb(from var(--cp-dark-cyan) r g b / 0.4);
+    --glow-purple: 0 0 16px rgb(from var(--cp-dark-purple) r g b / 0.4);
+    --shadow: 0 4px 24px rgb(from var(--cp-dark-cyan) r g b / 0.1);
 }
 
-/*light cyberpunk*/
+/*light cyberpunk variables*/
 html.light {
-    --bg-base: #f0f4ff;
-    --bg-surface: #ffffff;
-    --bg-card: rgba(255, 255, 255, 0.85);
-    --bg-hover: rgba(34, 211, 238, 0.08);
-    --border: rgba(34, 211, 238, 0.3);
-    --border-glow: rgba(34, 211, 238, 0.6);
-    --text-primary: #1e293b;
-    --text-accent: #0891b2;
-    --text-muted: #64748b;
-    --text-dim: #475569;
-    --glow-cyan: 0 0 15px rgba(34, 211, 238, 0.2);
-    --glow-purple: 0 0 15px rgba(153, 0, 255, 0.15);
-    --input-bg: rgba(255, 255, 255, 0.9);
-    --shadow: 0 3px 23px rgba(0, 0, 0, 0.1);
+    --bg-base: var(--cp-light);
+    --bg-surface: rgb(from var(--cp-light) r g b / 0.7);
+    --bg-card: rgb(from var(--cp-light) r g b / 0.5);
+    --bg-hover: rgb(from var(--cp-light-violet) r g b / 0.3);
+    --bg-btn: rgb(from var(--cp-light-cyan) r g b / 0.7);
+    --bg-input: rgb(from var(--cp-light-blue) r g b / 0.3);
+    --bg-dropdown: rgb(from var(--cp-light) r g b / 0.9);
+    --bg-error: rgb(from var(--cp-light-red) r g b / 0.3);
+    --bg-warning: rgb(from var(--cp-light-orange) r g b / 0.3);
+    --border: rgb(from var(--cp-light-cyan) r g b / 0.3);
+    --border-glow: rgb(from var(--cp-dark-cyan) r g b / 0.6);
+    --text-primary: var(--cp-dark);
+    --text-accent: var(--cp-light-cyan);
+    --text-muted: #333333;
+    --text-dim: var(--cp-light-red);
+    --text-btn: var(--cp-light-purple);
+    --text-heading: var(--cp-light-magenta);
+    --text-correct: var(--cp-light-green);
+    --text-wrong: var(--cp-light-red);
+    --text-warning: var(--cp-light-orange);
+    --glow-cyan: 0 0 12px rgb(from var(--cp-light-cyan) r g b / 0.2);
+    --glow-purple: 0 0 12px rgb(from var(--cp-light-purple) r g b / 0.2);
+    --shadow: 0 4px 20px rgb(from var(--cp-light-cyan) r g b / 0.1);
 }
 
-/*base body*/
+/*body*/
 body {
     background-color: var(--bg-base);
     color: var(--text-primary);
@@ -81,23 +125,24 @@ body {
 
 /*reusable classes*/
 @layer components {
-    /*inputs*/
+    /*text input*/
     .cyber-input {
-        @apply w-full rounded-xl px-4 py-3 transition duration-200;
-        background: var(--input-bg);
+        @apply w-full rounded-xl px-3 py-2 text-sm transition duration-300 outline-none;
+        background: var(--bg-input);
         border: 1px solid var(--border);
         color: var(--text-primary);
-        outline: none;
     }
+
     .cyber-input::placeholder {
         color: var(--text-muted);
     }
+
     .cyber-input:focus {
         border-color: var(--border-glow);
         box-shadow: var(--glow-cyan);
     }
 
-    /*cards/panels*/
+    /*cards*/
     .cyber-card {
         background: var(--bg-card);
         border: 1px solid var(--border);
@@ -106,58 +151,96 @@ body {
             box-shadow 0.2s,
             border-color 0.2s;
     }
-    .cyber-card:hover {
+
+    /*shadow for pc*/
+    @media (hover: hover) {
+        .cyber-card:hover {
+            border-color: var(--border-glow);
+            box-shadow: var(--glow-cyan);
+        }
+    }
+
+    /*shadow for mobile*/
+    .cyber-card:active {
         border-color: var(--border-glow);
         box-shadow: var(--glow-cyan);
     }
 
-    /*primary button*/
+    /*primary buttons*/
     .cyber-btn {
-        @apply px-6 py-2.5 rounded-full font-bold tracking-wider transition duration-200 cursor-pointer;
-        background: var(--text-accent);
-        color: #0a001f;
+        @apply px-5 py-2 rounded-full text-sm font-bold tracking-wider transition duration-300 cursor-pointer;
+        background: var(--bg-btn);
+        color: var(--text-btn);
     }
-    .cyber-btn:hover {
-        filter: brightness(1.15);
+
+    @media (hover: hover) {
+        .cyber-btn:hover {
+            filter: brightness(1.2);
+            box-shadow: var(--glow-cyan);
+        }
+    }
+
+    .cyber-btn:active {
         box-shadow: var(--glow-cyan);
     }
+
     .cyber-btn:disabled {
-        opacity: 0.4;
+        opacity: 0.3;
         cursor: not-allowed;
         filter: none;
         box-shadow: none;
     }
 
-    /*ghost/outline button*/
+    /*outline buttons*/
     .cyber-btn-ghost {
-        @apply px-6 py-2.5 rounded-full font-bold tracking-wider transition duration-200 cursor-pointer;
+        @apply px-5 py-2 rounded-full text-sm font-bold tracking-wider transition duration-300 cursor-pointer;
         background: transparent;
         border: 1px solid var(--border);
         color: var(--text-accent);
     }
-    .cyber-btn-ghost:hover {
-        border-color: var(--border-glow);
+
+    @media (hover: hover) {
+        .cyber-btn-ghost:hover {
+            border-color: var(--border-glow);
+            box-shadow: var(--glow-cyan);
+        }
+    }
+
+    .cyber-btn-ghost:active {
         box-shadow: var(--glow-cyan);
     }
 
     /*labels*/
     .cyber-label {
-        @apply text-sm font-medium mb-1 block;
+        @apply font-medium mb-1 block;
         color: var(--text-accent);
     }
 
-    /*section headings*/
+    /*headings*/
     .cyber-section {
-        @apply text-xs font-bold uppercase tracking-widest mb-3;
-        color: var(--text-muted);
+        @apply text-xs font-bold uppercase tracking-widest mb-2;
+        color: var(--text-heading);
         border-bottom: 1px solid var(--border);
-        padding-bottom: 6px;
     }
 
-    /*scrollable sidebar navigator*/
-    .sidebar-nav {
+    /*side navigator*/
+    .sidebar-navigator {
         @apply flex-1 overflow-y-auto space-y-1;
         scrollbar-width: thin;
-        scrollbar-color: rgba(34, 211, 238, 0.2) transparent;
+        scrollbar-color: rgb(from var(--text-accent) r g b / 0.2) transparent;
+    }
+
+    /*press effect*/
+    .cyber-press:active {
+        box-shadow: 0 0 12px var(--text-accent) !important;
+    }
+
+    /*dropdown list*/
+    .cyber-dropdown {
+        background: var(--bg-dropdown);
+        color: var(--text-dim);
+        border: 1px solid var(--border);
+        border-radius: 1rem;
+        box-shadow: var(--shadow);
     }
 }

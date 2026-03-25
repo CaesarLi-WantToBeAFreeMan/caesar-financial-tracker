@@ -1,166 +1,141 @@
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import Dashboard from "../components/Dashboard";
-import {useUser} from "../hooks/useUser";
 import HeaderBar from "../components/common/HeaderBar";
 import type {RecordFilter, RecordPage, RecordData} from "../types/RecordTypes";
 import SearchBar from "../components/common/SearchBar";
 import {LoaderCircle} from "lucide-react";
 import Pagination from "../components/common/Pagination";
 import ItemList from "../components/common/ItemList";
-import axiosConfig from "../utilities/AxiosUtility";
-import {API_ENDPOINTS} from "../utilities/apiEndpoint";
-import toast from "react-hot-toast";
 import Modal from "../components/common/Modal";
 import {Create, Update, Delete, Filter, Import} from "../components/Records";
+import {useUser} from "../context/UserContext";
+import {getDate} from "../utilities/dates";
+import {recordApi} from "../utilities/api";
+import {useI18n} from "../context/I18nContext";
 
 export default function Record() {
     useUser();
+    const {translation} = useI18n();
+
+    const today = getDate();
 
     const [filter, setFilter] = useState<RecordFilter>({
         type: "all",
         order: "CREATED_DESCENDING",
         size: 30,
-        dateStart: new Date().toISOString().split("T")[0],
-        dateEnd: new Date().toISOString().split("T")[0],
+        dateStart: today,
+        dateEnd: today,
         categoryId: null,
         priceLow: 0,
         priceHigh: null
     });
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState<boolean>(false);
     const [page, setPage] = useState<RecordPage | null>(null);
     const [index, setIndex] = useState<number>(0);
-    const [keyword, setKeyword] = useState("");
+    const [keyword, setKeyword] = useState<string>("");
 
-    const updateFilter = <K extends keyof RecordFilter>(key: K, value: RecordFilter[K]) => {
-        setFilter(previous => ({...previous, [key]: value}));
-        setIndex(0);
-    };
+    const updateFilter = useCallback(
+        <K extends keyof RecordFilter>(key: K, value: RecordFilter[K]) =>
+            setFilter(previous => ({...previous, [key]: value})),
+        []
+    );
 
-    // //modals
-    const [openImportModal, setOpenImportModal] = useState(false);
-    const [openCreateModal, setOpenCreateModal] = useState(false);
-    const [openUpdateModal, setOpenUpdateModal] = useState(false);
-    const [openDeleteModal, setOpenDeleteModal] = useState(false);
+    //modals
+    const [openImportModal, setOpenImportModal] = useState<boolean>(false);
+    const [openCreateModal, setOpenCreateModal] = useState<boolean>(false);
+    const [openUpdateModal, setOpenUpdateModal] = useState<boolean>(false);
+    const [openDeleteModal, setOpenDeleteModal] = useState<boolean>(false);
     const [selectedRecord, setSelectedRecord] = useState<RecordData | null>(null);
 
     //record apis
-    const createRecord = async (record: RecordData) => {
-        try {
-            console.log(record);
-            await axiosConfig.post(API_ENDPOINTS.CREATE_RECORD, {
-                name: record.name,
-                type: record.type,
-                icon: record.icon,
-                date: record.date,
-                price: record.price,
-                description: record.description || record.name,
-                category_id: record.category_id
+    const readRecords = useCallback(async () => {
+        setLoading(true);
+        await recordApi.read(filter, keyword, index, setPage, translation.record.fetchFailed);
+        setLoading(false);
+    }, [filter, keyword, index, translation]);
+
+    const createRecord = useCallback(
+        async (record: RecordData) => {
+            await recordApi.create(record, {
+                success: translation.record.createSuccess,
+                failed: translation.record.createFailed
             });
-            toast.success("Record created");
             setOpenCreateModal(false);
             readRecords();
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || "Created failed");
-        }
-    };
+        },
+        [readRecords, translation]
+    );
 
-    const readRecords = async () => {
-        setLoading(true);
-        try {
-            const response = await axiosConfig.get(API_ENDPOINTS.READ_RECORDS, {
-                params: {
-                    type: filter.type === "all" ? null : filter.type,
-                    order: filter.order,
-                    size: filter.size,
-                    dateStart: filter.dateStart,
-                    dateEnd: filter.dateEnd,
-                    priceLow: filter.priceLow,
-                    priceHigh: filter.priceHigh,
-                    keyword: keyword || null,
-                    categoryId: filter.categoryId,
-                    page: index
-                }
+    const updateRecord = useCallback(
+        async (record: RecordData) => {
+            if (!record.id) return;
+            await recordApi.update(record, {
+                success: translation.record.updateSuccess,
+                failed: translation.record.updateFailed
             });
-            setPage({
-                content: response.data.content,
-                totalElements: response.data.total_elements,
-                totalPages: response.data.total_pages,
-                number: response.data.number,
-                size: response.data.size,
-                first: response.data.first,
-                last: response.data.last
-            });
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || "Fetch records failed");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const updateRecord = async (record: RecordData) => {
-        if (!record.id) return;
-        try {
-            await axiosConfig.put(API_ENDPOINTS.UPDATE_RECORD.replace("{id}", String(record.id)), record);
-            toast.success("Updated successfully");
             readRecords();
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || "Updated failed");
-        } finally {
             setOpenUpdateModal(false);
-        }
-    };
+        },
+        [readRecords, translation]
+    );
 
-    const deleteRecord = async (id: number) => {
-        try {
-            await axiosConfig.delete(API_ENDPOINTS.DELETE_RECORD.replace("{id}", String(id)));
-            toast.success("Record deleted");
+    const deleteRecord = useCallback(
+        async (id: number) => {
+            await recordApi.delete(id, {
+                success: translation.record.deleteSuccess,
+                failed: translation.record.deleteFailed
+            });
             readRecords();
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || "Deleted failed");
-        } finally {
             setOpenDeleteModal(false);
-        }
-    };
+        },
+        [readRecords, translation]
+    );
 
     useEffect(() => {
         readRecords();
     }, [filter, index, keyword]);
 
     return (
-        <Dashboard activeRoute="Record">
-            <div className="mx-auto my-6">
+        <Dashboard activeRoute={translation.navigation.record}>
+            <div className="mx-auto my-4 space-y-4">
                 <HeaderBar
-                    title="All Records"
+                    title={translation.record.title}
                     setOpenImportModal={setOpenImportModal}
                     setOpenCreateModal={setOpenCreateModal}
                 />
 
                 <Filter filter={filter} onChange={updateFilter} />
 
-                <SearchBar keyword={keyword} setKeyword={setKeyword} placeholder="Search Records..." />
+                <SearchBar
+                    keyword={keyword}
+                    setKeyword={setKeyword}
+                    placeholder={translation.record.searchPlaceholder}
+                />
 
                 {loading ? (
                     <div className="flex items-center justify-center py-20">
-                        <LoaderCircle size={39} className="animate-spin text-cyan-400" />
+                        <LoaderCircle size={39} className="animate-spin text-(--text-accent)" />
                     </div>
                 ) : (
                     page && (
                         <>
                             <ItemList
-                                title="Records Source"
+                                title={translation.record.title}
                                 items={page.content}
                                 totalElements={page.totalElements}
                                 onEdit={(id: number) => {
                                     const record = page.content.find((r: RecordData) => r.id === id);
-                                    if (!record) return;
-                                    setSelectedRecord(record);
-                                    setOpenUpdateModal(true);
+                                    if (record) {
+                                        setSelectedRecord(record);
+                                        setOpenUpdateModal(true);
+                                    }
                                 }}
                                 onDelete={(id: number) => {
                                     const record = page.content.find((r: RecordData) => r.id === id);
-                                    if (!record) return;
-                                    setSelectedRecord(record);
-                                    setOpenDeleteModal(true);
+                                    if (record) {
+                                        setSelectedRecord(record);
+                                        setOpenDeleteModal(true);
+                                    }
                                 }}
                                 isRecord
                             />
@@ -169,23 +144,19 @@ export default function Record() {
                     )
                 )}
 
-                <Modal isOpen={openCreateModal} onClose={() => setOpenCreateModal(false)} title="Add Record">
+                <Modal
+                    isOpen={openCreateModal}
+                    onClose={() => setOpenCreateModal(false)}
+                    title={translation.record.create}
+                >
                     <Create onAddRecord={createRecord} />
                 </Modal>
 
-                <Modal isOpen={openUpdateModal} onClose={() => setOpenUpdateModal(false)} title="Update Record">
-                    <Update record={selectedRecord!} onUpdateRecord={updateRecord} />
-                </Modal>
-
-                <Modal isOpen={openDeleteModal} onClose={() => setOpenDeleteModal(false)} title="Delete Record">
-                    <Delete
-                        record={selectedRecord!}
-                        onConfirm={deleteRecord}
-                        onCancel={() => setOpenDeleteModal(false)}
-                    />
-                </Modal>
-
-                <Modal isOpen={openImportModal} onClose={() => setOpenImportModal(false)} title="Import Record">
+                <Modal
+                    isOpen={openImportModal}
+                    onClose={() => setOpenImportModal(false)}
+                    title={translation.record.import}
+                >
                     <Import
                         onClose={() => {
                             setOpenImportModal(false);
@@ -193,6 +164,30 @@ export default function Record() {
                         }}
                     />
                 </Modal>
+
+                {selectedRecord && (
+                    <Modal
+                        isOpen={openUpdateModal}
+                        onClose={() => setOpenUpdateModal(false)}
+                        title={translation.record.update}
+                    >
+                        <Update record={selectedRecord} onUpdateRecord={updateRecord} />
+                    </Modal>
+                )}
+
+                {selectedRecord && (
+                    <Modal
+                        isOpen={openDeleteModal}
+                        onClose={() => setOpenDeleteModal(false)}
+                        title={translation.record.delete}
+                    >
+                        <Delete
+                            record={selectedRecord}
+                            onConfirm={deleteRecord}
+                            onCancel={() => setOpenDeleteModal(false)}
+                        />
+                    </Modal>
+                )}
             </div>
         </Dashboard>
     );

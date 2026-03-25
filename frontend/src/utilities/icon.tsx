@@ -1,16 +1,19 @@
 import {Box, LoaderCircle} from "lucide-react";
 import React, {useState} from "react";
 
+//validations
 export function isIconImage(icon?: string | null): boolean {
     if (!icon) return false;
     return icon.startsWith("http") || icon.startsWith("https") || icon.startsWith("data:image");
 }
 
+//getters
 export function getFirstChar(icon?: string | null): string {
     if (!icon) return "";
     return [...icon.trim()][0] || "";
 }
 
+//types
 interface RenderIconVariableType {
     icon?: React.ReactNode;
     name: string;
@@ -21,6 +24,7 @@ interface RenderIconVariableType {
     className?: string;
 }
 
+//renders
 export function RenderIcon({
     icon,
     name = "icon",
@@ -40,7 +44,9 @@ export function RenderIcon({
         <div className={`flex items-center justify-center relative transition duration-300 ${className}`}>
             {isImage && !error ? (
                 <div className="relative flex items-center justify-center">
-                    {loading && <LoaderCircle size={loaderSize} className="absolute animate-spin text-cyan-400 z-10" />}
+                    {loading && (
+                        <LoaderCircle size={loaderSize} className="absolute animate-spin text-(--text-accent) z-10" />
+                    )}
                     <img
                         src={icon as string}
                         alt={name}
@@ -55,12 +61,12 @@ export function RenderIcon({
             ) : isLucide ? (
                 React.cloneElement(icon as React.ReactElement<{size?: number; className?: string}>, {
                     size: boxSize,
-                    className: "text-cyan-400"
+                    className: "text-(--text-accent)"
                 })
             ) : typeof icon === "string" && icon.trim().length > 0 ? (
-                <span className={`${charSize} font-mono leading-none text-cyan-400`}>{getFirstChar(icon)}</span>
+                <span className={`${charSize} font-mono leading-none text-(--text-accent)`}>{getFirstChar(icon)}</span>
             ) : (
-                <Box size={boxSize} className="text-cyan-400" />
+                <Box size={boxSize} className="text-(--text-accent)" />
             )}
         </div>
     );

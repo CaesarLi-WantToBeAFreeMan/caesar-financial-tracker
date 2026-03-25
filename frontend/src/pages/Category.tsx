@@ -1,18 +1,16 @@
 import Dashboard from "../components/Dashboard";
-import {useUser} from "../hooks/useUser";
 import {useI18n} from "../context/I18nContext";
 import ItemList from "../components/common/ItemList";
 import Pagination from "../components/common/Pagination";
 import {useCallback, useEffect, useState} from "react";
-import axiosConfig from "../utilities/AxiosUtility";
-import {API_ENDPOINTS} from "../utilities/apiEndpoint";
-import toast from "react-hot-toast";
 import Modal from "../components/common/Modal";
 import type {CategoryData, CategoryPage, CategoryFilter} from "../types/CategoryTypes";
 import SearchBar from "../components/common/SearchBar";
 import {LoaderCircle} from "lucide-react";
 import {Create, Update, Delete, Filter, Import} from "../components/Categories";
 import HeaderBar from "../components/common/HeaderBar";
+import {useUser} from "../context/UserContext";
+import {categoryApi} from "../utilities/api";
 
 export default function Category() {
     useUser();
@@ -32,48 +30,24 @@ export default function Category() {
 
     const updateFilter = useCallback(
         <K extends keyof CategoryFilter>(key: K, value: CategoryFilter[K]) =>
-            setFilter(prev => ({...prev, [key]: value})),
+            setFilter(previous => ({...previous, [key]: value})),
         []
     );
 
     const readCategories = useCallback(async () => {
         setLoading(true);
-        try {
-            const response = await axiosConfig.get(API_ENDPOINTS.READ_CATEGORIES, {
-                params: {
-                    type: filter.type === "all" ? null : filter.type,
-                    keyword: keyword.trim() || undefined,
-                    order: filter.order,
-                    page: index,
-                    size: filter.size
-                }
-            });
-            setPage({
-                content: response.data.content,
-                totalElements: response.data.total_elements,
-                totalPages: response.data.total_pages,
-                number: response.data.number,
-                size: response.data.size,
-                first: response.data.first,
-                last: response.data.last
-            });
-        } catch (e: any) {
-            toast.error(e?.response?.data?.message || translation.category.fetchFailed);
-        } finally {
-            setLoading(false);
-        }
+        await categoryApi.read(filter, keyword, index, setPage, translation.category.fetchFailed);
+        setLoading(false);
     }, [filter, index, keyword, translation]);
 
     const createCategory = useCallback(
         async (category: CategoryData) => {
+            await categoryApi.create(category, {
+                success: translation.category.createSuccess,
+                failed: translation.category.createFailed
+            });
             setOpenCreateModal(false);
-            try {
-                await axiosConfig.post(API_ENDPOINTS.CREATE_CATEGORY, category);
-                toast.success(translation.category.createSuccess);
-                readCategories();
-            } catch (e: any) {
-                toast.error(e?.response?.data?.message || translation.category.createFailed);
-            }
+            readCategories();
         },
         [readCategories, translation]
     );
@@ -81,30 +55,24 @@ export default function Category() {
     const updateCategory = useCallback(
         async (category: CategoryData) => {
             if (!category.id) return;
-            try {
-                await axiosConfig.put(API_ENDPOINTS.UPDATE_CATEGORY.replace("{id}", String(category.id)), category);
-                toast.success(translation.category.updateSuccess);
-                readCategories();
-            } catch (e: any) {
-                toast.error(e?.response?.data?.message || translation.category.updateFailed);
-            } finally {
-                setOpenUpdateModal(false);
-            }
+            categoryApi.update(category, {
+                success: translation.category.updateSuccess,
+                failed: translation.category.updateFailed
+            });
+            setOpenUpdateModal(false);
+            readCategories();
         },
         [readCategories, translation]
     );
 
     const deleteCategory = useCallback(
         async (id: number) => {
-            try {
-                await axiosConfig.delete(API_ENDPOINTS.DELETE_CATEGORY.replace("{id}", String(id)));
-                toast.success(translation.category.deleteSuccess);
-                readCategories();
-            } catch (e: any) {
-                toast.error(e?.response?.data?.message || translation.category.deleteFailed);
-            } finally {
-                setOpenDeleteModal(false);
-            }
+            await categoryApi.delete(id, {
+                success: translation.category.deleteSuccess,
+                failed: translation.category.deleteFailed
+            });
+            setOpenDeleteModal(false);
+            readCategories();
         },
         [readCategories, translation]
     );
@@ -114,7 +82,7 @@ export default function Category() {
     }, [filter, index, keyword]);
 
     return (
-        <Dashboard activeRoute={translation.nav.category}>
+        <Dashboard activeRoute={translation.navigation.category}>
             <div className="mx-auto my-4 space-y-4">
                 <HeaderBar
                     title={translation.category.title}
@@ -132,7 +100,7 @@ export default function Category() {
 
                 {loading ? (
                     <div className="flex items-center justify-center py-20">
-                        <LoaderCircle size={38} className="animate-spin" style={{color: "var(--text-accent)"}} />
+                        <LoaderCircle size={39} className="animate-spin text-(--text-accent)" />
                     </div>
                 ) : (
                     page && (
@@ -141,17 +109,17 @@ export default function Category() {
                                 title={translation.category.title}
                                 items={page.content}
                                 totalElements={page.totalElements}
-                                onEdit={id => {
-                                    const c = page.content.find((c: CategoryData) => c.id === id);
-                                    if (c) {
-                                        setSelectedCategory(c);
+                                onEdit={(id: number) => {
+                                    const category = page.content.find((category: CategoryData) => category.id === id);
+                                    if (category) {
+                                        setSelectedCategory(category);
                                         setOpenUpdateModal(true);
                                     }
                                 }}
-                                onDelete={id => {
-                                    const c = page.content.find((c: CategoryData) => c.id === id);
-                                    if (c) {
-                                        setSelectedCategory(c);
+                                onDelete={(id: number) => {
+                                    const category = page.content.find((category: CategoryData) => category.id === id);
+                                    if (category) {
+                                        setSelectedCategory(category);
                                         setOpenDeleteModal(true);
                                     }
                                 }}
@@ -168,6 +136,7 @@ export default function Category() {
                 >
                     <Create onAddCategory={createCategory} />
                 </Modal>
+
                 <Modal
                     isOpen={openImportModal}
                     onClose={() => setOpenImportModal(false)}
@@ -180,6 +149,7 @@ export default function Category() {
                         }}
                     />
                 </Modal>
+
                 {selectedCategory && (
                     <Modal
                         isOpen={openUpdateModal}
@@ -189,6 +159,7 @@ export default function Category() {
                         <Update category={selectedCategory} onUpdateCategory={updateCategory} />
                     </Modal>
                 )}
+
                 {selectedCategory && (
                     <Modal
                         isOpen={openDeleteModal}

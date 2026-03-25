@@ -1,30 +1,33 @@
-import {useState, useRef, useEffect} from "react";
-import {XCircle, Check, CircleDollarSign} from "lucide-react";
-import {isValidPriceRange, priceFormat} from "../../utilities/prices";
+/*
+ * numpad-style price input
+ */
+import {useState, useRef} from "react";
+import {Check, CircleDollarSign, CircleX} from "lucide-react";
+import {isValidPriceRange} from "../../utilities/prices";
+import {useClickOutside} from "../../hooks/useClickOutside";
+import {useSettings} from "../../context/SettingsContext";
 
 interface Props {
     value: number | null;
     onChange: (v: number | null) => void;
     minPrice?: number;
     maxPrice?: number | null;
+    isRight?: boolean;
 }
 
-export default function PricePicker({value, onChange, minPrice = 0, maxPrice = null}: Props) {
-    const [open, setOpen] = useState(false);
+export default function PricePicker({value, onChange, minPrice = 0, maxPrice = null, isRight}: Props) {
+    const {formatPrice} = useSettings();
+
+    const [open, setOpen] = useState<boolean>(false);
     const [preview, setPreview] = useState<string>("");
     const containerRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        const handler = (e: MouseEvent) => {
-            if (!containerRef.current?.contains(e.target as Node)) setOpen(false);
-        };
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
-    }, []);
+    useClickOutside(containerRef, () => setOpen(false), open);
 
-    const getNumericPreview = () => (preview === "" ? null : parseFloat(preview));
-    const currentNum = getNumericPreview();
-    const isInvalid = currentNum !== null && (!isValidPriceRange(currentNum, maxPrice) || currentNum < minPrice);
+    //helper functions
+    const currentNumber = preview === "" ? null : parseFloat(preview);
+    const isInvalid =
+        currentNumber !== null && (!isValidPriceRange(currentNumber, maxPrice) || currentNumber < minPrice);
 
     const handleKey = (key: string) => {
         if (key === "inf") {
@@ -33,8 +36,12 @@ export default function PricePicker({value, onChange, minPrice = 0, maxPrice = n
             setOpen(false);
             return;
         }
-        let next = preview + key;
+        if (key === "BS") {
+            setPreview(p => p.slice(0, -1));
+            return;
+        }
         if (key === "." && preview.includes(".")) return;
+        const next = preview + key;
         if (next.includes(".") && next.split(".")[1].length > 2) return;
         setPreview(next);
     };
@@ -45,67 +52,89 @@ export default function PricePicker({value, onChange, minPrice = 0, maxPrice = n
         setOpen(false);
     };
 
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+        if (!open) return;
+        if (e.key >= "0" && e.key <= "9") {
+            e.preventDefault();
+            handleKey(e.key);
+        } else if (e.key === ".") {
+            e.preventDefault();
+            handleKey(".");
+        } else if (e.key === "Backspace") {
+            e.preventDefault();
+            handleKey("BS");
+        } else if (e.key === "Enter") {
+            e.preventDefault();
+            handleKey("BS");
+        } else if (e.key === "Delete") {
+            e.preventDefault();
+            setPreview("");
+        } else if (e.key === "Escape") {
+            e.preventDefault();
+            setOpen(false);
+        }
+    };
+
+    const KEYS: (number | string)[] = [7, 8, 9, 4, 5, 6, 3, 2, 1, ".", 0, "BS"];
+
+    const keyBtnStyles =
+        "h-9 w-9 rounded-full font-mono transition duration-300 cursor-pointer bg-(--bg-hover) text-(--text-accent) hover:bg-(--text-accent) active:bg-(--text-accent) hover:text-(--text-dim) active:text-(--text-dim) hover:shadow-[0_0_8px_var(--text-accent)] active:shadow-[0_0_8px_var(--text-accent)] hover:scale-120 active:scale-120";
+
     return (
-        <div className="relative" ref={containerRef}>
+        <div className="relative" ref={containerRef} tabIndex={open ? 0 : -1} onKeyDown={handleKeyDown}>
             <button
                 onClick={() => {
                     setOpen(true);
-                    setPreview(value?.toString() || "");
+                    setPreview(value?.toString() ?? "");
                 }}
-                className="flex items-center gap-3 rounded-lg border border-cyan-400/30 bg-black/40 px-3 py-2 text-cyan-200 text-xs transition hover:border-cyan-400/60 hover:shadow-[0_0_10px_rgba(34,211,238,0.2)] hover:cursor-pointer"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 border transition duration-300 cursor-pointer active:shadow-[0_0_8px_var(--text-accent)] border-(--border) bg-(--bg-card) text-(--text-accent) hover:border-(--border-glow) hover:text-(--text-accent) md:hover:scale-120 md:active:scale-120"
             >
-                <span className="font-mono">{priceFormat(value!)}</span>
-                <CircleDollarSign size={12} className="text-cyan-400" />
+                <span className="font-mono">{formatPrice(value)}</span>
+                <CircleDollarSign size={15} className="text-(--text-dim)" />
             </button>
 
             {open && (
-                <div className="absolute left-1/2 -translate-x-1/2 z-50 mt-4 w-39 rounded-xl border border-cyan-400/30 bg-[#0b0f1a] p-3 shadow-2xl">
-                    <div className="flex justify-between items-center mb-2">
-                        <div className="w-4" />
-                        <div className={`text-sm font-mono font-bold ${isInvalid ? "text-red-500" : "text-cyan-400"}`}>
-                            {priceFormat(currentNum!)}
+                <div
+                    className={`absolute ${isRight ? "right-0" : "left-1/2 -translate-x-1/2"} z-50 mt-2 w-52 rounded-xl p-3 cyber-dropdown bg-(--bg-base)`}
+                >
+                    {/*preview + close button*/}
+                    <div className="flex items-center justify-between mb-3 pb-1 border-b border-(--border)">
+                        <div
+                            className={`${isInvalid ? "text-(--text-wrong)" : "text-(--text-accent)"} font-mono font-bold transtion duration-300`}
+                        >
+                            {formatPrice(currentNumber)}
                         </div>
                         <button
                             onClick={() => setOpen(false)}
-                            className="text-red-600 hover:text-red-400 cursor-pointer transition"
+                            className="text-(--text-wrong) hover:text-(--text-accent) cursor-pointer hover:scale-120 active:scale-120 transition duration-300"
                         >
-                            <XCircle size={18} />
+                            <CircleX size={18} />
                         </button>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-1.5 mb-2">
-                        {[7, 8, 9, 4, 5, 6, 3, 2, 1, ".", 0, "00"].map(k => (
-                            <button
-                                key={k}
-                                onClick={() => handleKey(k.toString())}
-                                className="h-10 rounded bg-cyan-400/10 text-cyan-600 font-mono hover:bg-cyan-400/20 transition hover:cursor-pointer"
-                            >
-                                {k}
+                    {/*numpad grid*/}
+                    <div className="grid grid-cols-3 gap-3 mb-3">
+                        {KEYS.map((key: number | string, index: number) => (
+                            <button key={index} onClick={() => handleKey(String(key))} className={keyBtnStyles}>
+                                {key}
                             </button>
                         ))}
-                    </div>
 
-                    <div className="flex gap-1">
-                        <button
-                            onClick={() => setPreview("")}
-                            className="flex-1 py-1 text-[10px] border border-red-500/30 text-red-500 hover:bg-red-500/10 cursor-pointer rounded transition-all"
-                        >
-                            CLEAR
+                        {/*clear + infinity(optional) + confirm buttons*/}
+                        <button onClick={() => setPreview("")} className={keyBtnStyles}>
+                            CL
                         </button>
                         {maxPrice === null && (
-                            <button
-                                onClick={() => handleKey("inf")}
-                                className="flex-1 rounded bg-cyan-400/10 text-cyan-600 text-mono hover:bg-cyan-400/20 hover:cursor-pointer "
-                            >
+                            <button onClick={() => handleKey("inf")} className={keyBtnStyles}>
                                 ∞
                             </button>
                         )}
                         <button
                             onClick={confirm}
                             disabled={isInvalid}
-                            className="flex-1 flex justify-center items-center rounded transition  bg-cyan-500/20 text-cyan-400 border border-cyan-400/40 hover:bg-cyan-500 hover:text-black hover:cursor-pointer disabled:opacity-20 disabled:bg-gray-700"
+                            className="flex items-center h-9 w-9 p-1 rounded-full font-mono transition duration-300 cursor-pointer text-(--text-accent) border border-(--border) hover:shadow-[0_0_8px_var(--text-accent)] active:shadow-[0_0_8px_var(--text-accent)] hover:scale-120 active:scale-120 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100 disabled:hover:shadow-none disabled:active:shadow-none"
                         >
-                            <Check size={18} />
+                            <Check />
                         </button>
                     </div>
                 </div>

@@ -1,8 +1,11 @@
-import {createContext, useEffect, useState} from "react";
-import type {ReactNode} from "react";
-import axiosConfig from "../utilities/AxiosUtility";
-import {API_ENDPOINTS} from "../utilities/apiEndpoint";
+/*
+ * store the currently authenticated user
+ */
+import {createContext, useContext, useEffect, useState, type ReactNode} from "react";
+import {storage} from "../utilities/storage";
+import {profileApi} from "../utilities/api";
 
+//context types
 export interface User {
     id: number;
     firstName: string;
@@ -15,29 +18,29 @@ export interface UserContextType {
     user: User | null;
     setUser: React.Dispatch<React.SetStateAction<User | null>>;
     clearUser: () => void;
-    loading: boolean;
 }
 
 export const UserContext = createContext<UserContextType | null>(null);
 
+//provider
 export const UserContextProvider = ({children}: {children: ReactNode}) => {
     const [user, setUser] = useState<User | null>(null);
-    const [loading, setLoading] = useState(true);
     const clearUser = () => {
-        localStorage.removeItem("token");
+        storage.remove("token");
         setUser(null);
     };
     useEffect(() => {
-        const token = localStorage.getItem("token");
-        if (!token) {
-            setLoading(false);
-            return;
-        }
-        axiosConfig
-            .get(API_ENDPOINTS.READ_PROFILE)
-            .then(response => setUser(response.data))
-            .catch(clearUser)
-            .finally(() => setLoading(false));
+        const token = storage.get("token");
+        if (!token) return;
+        const fetchProfile = async () => await profileApi.read(setUser, clearUser);
+        fetchProfile();
     }, []);
-    return <UserContext.Provider value={{user, setUser, clearUser, loading}}>{children}</UserContext.Provider>;
+    return <UserContext.Provider value={{user, setUser, clearUser}}>{children}</UserContext.Provider>;
 };
+
+//hook
+export function useUser(): UserContextType {
+    const context = useContext(UserContext);
+    if (!context) throw new Error("useUser must be used within UserContextProvider");
+    return context;
+}

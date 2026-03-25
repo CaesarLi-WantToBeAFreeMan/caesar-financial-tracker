@@ -1,17 +1,15 @@
 import {useCallback, useEffect, useState} from "react";
 import Dashboard from "../components/Dashboard";
-import {useUser} from "../hooks/useUser";
 import {useI18n} from "../context/I18nContext";
 import {getDate} from "../utilities/dates";
 import type {RecordData} from "../types/RecordTypes";
 import type {SummaryFilter} from "../types/SummaryTypes.ts";
-import axiosConfig from "../utilities/AxiosUtility.ts";
-import {API_ENDPOINTS} from "../utilities/apiEndpoint.ts";
-import toast from "react-hot-toast";
 import SearchBar from "../components/common/SearchBar.tsx";
 import ChartViewer from "../components/common/ChartViewer.tsx";
 import {Filter} from "../components/Summaries.tsx";
 import {LoaderCircle} from "lucide-react";
+import {useUser} from "../context/UserContext.tsx";
+import {recordApi} from "../utilities/api.ts";
 
 export default function Summary() {
     useUser();
@@ -35,30 +33,14 @@ export default function Summary() {
 
     const updateFilter = useCallback(
         <K extends keyof SummaryFilter>(key: K, value: SummaryFilter[K]) =>
-            setFilter(prev => ({...prev, [key]: value})),
+            setFilter(previous => ({...previous, [key]: value})),
         []
     );
 
     const readAllRecords = useCallback(async () => {
         setLoading(true);
-        try {
-            const response = await axiosConfig.get(API_ENDPOINTS.READ_ALL_RECORDS, {
-                params: {
-                    type: filter.type === "all" ? null : filter.type,
-                    dateStart: filter.dateStart,
-                    dateEnd: filter.dateEnd,
-                    priceLow: filter.priceLow,
-                    priceHigh: filter.priceHigh,
-                    categories: filter.category,
-                    keyword: keyword || null
-                }
-            });
-            setRecords(response.data);
-        } catch (e: any) {
-            toast.error(e?.response?.data?.message || translation.summary.fetchFailed);
-        } finally {
-            setLoading(false);
-        }
+        await recordApi.readAll(filter, keyword, setRecords, translation.record.fetchFailed);
+        setLoading(false);
     }, [filter, keyword, translation]);
 
     useEffect(() => {
@@ -66,11 +48,9 @@ export default function Summary() {
     }, [filter, keyword]);
 
     return (
-        <Dashboard activeRoute={translation.nav.summary}>
+        <Dashboard activeRoute={translation.navigation.summary}>
             <div className="mx-auto my-4 space-y-4">
-                <h1 className="text-xl font-bold" style={{color: "var(--text-accent)"}}>
-                    {translation.summary.title}
-                </h1>
+                <h1 className="text-xl font-bold text-(--text-accent)">{translation.summary.title}</h1>
 
                 <Filter filter={filter} onChange={updateFilter} />
 
@@ -82,7 +62,7 @@ export default function Summary() {
 
                 {loading ? (
                     <div className="flex items-center justify-center py-20">
-                        <LoaderCircle size={38} className="animate-spin" style={{color: "var(--text-accent)"}} />
+                        <LoaderCircle size={39} className="animate-spin text-(--text-accent)" />
                     </div>
                 ) : (
                     <ChartViewer data={records} chartMode={filter.chartMode} divisionMode={filter.divisionMode} />

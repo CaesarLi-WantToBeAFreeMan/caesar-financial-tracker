@@ -1,10 +1,10 @@
 import {useMemo} from "react";
 import {Link, useNavigate} from "react-router-dom";
-import {useI18n, LOCALE_OPTIONS, type Locale} from "../context/I18nContext";
-import {useTheme} from "../context/ThemeContext";
-import {Banknote, ChartBar, FileText, Globe, Moon, ShieldCheck, Sun, ChevronDown, LogIn, UserPlus} from "lucide-react";
+import {useI18n} from "../context/I18nContext";
+import {Banknote, ChartBar, FileText, Globe, Moon, ShieldCheck, LogIn, UserPlus, Gauge} from "lucide-react";
 import logo from "../assets/images/logo.png";
-import {useState} from "react";
+import PageHeader from "../components/PageHeader";
+import {storage} from "../utilities/storage";
 
 const TECH_STACK = [
     {label: "Spring Boot 4", color: "#22d3ee"},
@@ -22,13 +22,10 @@ const TECH_STACK = [
 const FEATURE_ICONS = [Banknote, ChartBar, FileText, Globe, Moon, ShieldCheck];
 
 export default function Home() {
-    const {translation, locale, setLocale} = useI18n();
-    const {isDark, toggleTheme} = useTheme();
+    const {translation} = useI18n();
     const navigate = useNavigate();
-    const [showLang, setShowLang] = useState<boolean>(false);
 
-    const currentLocale = useMemo(() => LOCALE_OPTIONS.find(option => option.value === locale)!, [locale]);
-    const isLoggedIn = !!localStorage.getItem("token");
+    const isLoggedIn = !!storage.get("token");
 
     const features = useMemo(
         () => [
@@ -43,114 +40,36 @@ export default function Home() {
     );
 
     return (
-        <div
-            className="min-h-screen flex flex-col"
-            style={{background: "var(--bg-base)", color: "var(--text-primary)"}}
-        >
-            {/*navigator*/}
-            <nav
-                className="sticky top-0 z-50 flex items-center justify-between px-4 md:px-8 py-3"
-                style={{
-                    background: "color-mix(in srgb, var(--bg-surface) 85%, transparent)",
-                    borderBottom: "1px solid var(--border)",
-                    backdropFilter: "blur(12px)"
-                }}
-            >
-                {/*logo*/}
-                <button onClick={() => navigate("/home")} className="group flex items-center gap-2.5 cursor-pointer">
-                    <img
-                        src={logo}
-                        alt="logo"
-                        className="h-10 w-10 rounded-xl group-hover:scale-120 transition"
-                        style={{border: "1px solid var(--border)"}}
-                    />
-                    <span className="font-mono font-bold text-sm hidden sm:block" style={{color: "var(--text-accent)"}}>
-                        {translation.nav.appName}
-                    </span>
-                </button>
-
-                {/*right controls*/}
-                <div className="flex items-center gap-3">
-                    {/*theme*/}
-                    <button
-                        onClick={toggleTheme}
-                        className="flex items-center justify-center w-9 h-9 rounded-xl transition cursor-pointer"
-                        style={{background: "var(--bg-card)", border: "1px solid var(--border)"}}
-                    >
-                        {isDark ? (
-                            <Sun size={16} className="text-yellow-400" />
+        <div className="min-h-screen flex flex-col bg-(--bg-base) text-(--text-primary)">
+            <PageHeader
+                right={
+                    <>
+                        {isLoggedIn ? (
+                            <button
+                                onClick={() => navigate("/profile")}
+                                className="cyber-btn flex items-center gap-2 text-sm px-4 py-2"
+                            >
+                                <Gauge size={15} />
+                                Dashboard
+                            </button>
                         ) : (
-                            <Moon size={16} style={{color: "var(--text-accent)"}} />
+                            <>
+                                <Link
+                                    to="/login"
+                                    className="cyber-btn hidden sm:flex items-center gap-2 text-sm px-4 py-2"
+                                >
+                                    <LogIn size={15} />
+                                    {translation.authentication.login}
+                                </Link>
+                                <Link to="/signup" className="cyber-btn flex items-center gap-2 text-sm px-4 py-2">
+                                    <UserPlus size={15} />
+                                    {translation.authentication.signup}
+                                </Link>
+                            </>
                         )}
-                    </button>
-                    {/*language*/}
-                    <div className="relative">
-                        <button
-                            onClick={() => setShowLang(p => !p)}
-                            className="flex items-center gap-1.5 px-2.5 h-9 rounded-xl text-sm transition cursor-pointer"
-                            style={{
-                                background: "var(--bg-card)",
-                                border: "1px solid var(--border)",
-                                color: "var(--text-accent)"
-                            }}
-                        >
-                            <span>{currentLocale.flag}</span>
-                            <span className="hidden md:block text-xs">{currentLocale.label}</span>
-                            <ChevronDown size={12} className={`transition-transform ${showLang ? "rotate-180" : ""}`} />
-                        </button>
-                        {showLang && (
-                            <div
-                                className="absolute right-0 mt-2 w-44 rounded-xl overflow-hidden shadow-xl z-50"
-                                style={{background: "var(--bg-surface)", border: "1px solid var(--border)"}}
-                            >
-                                {LOCALE_OPTIONS.map(opt => (
-                                    <button
-                                        key={opt.value}
-                                        onClick={() => {
-                                            setLocale(opt.value as Locale);
-                                            setShowLang(false);
-                                        }}
-                                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm cursor-pointer transition"
-                                        style={{
-                                            color: locale === opt.value ? "var(--text-accent)" : "var(--text-dim)",
-                                            background: locale === opt.value ? "var(--bg-hover)" : "transparent"
-                                        }}
-                                        onMouseEnter={e => (e.currentTarget.style.background = "var(--bg-hover)")}
-                                        onMouseLeave={e =>
-                                            (e.currentTarget.style.background =
-                                                locale === opt.value ? "var(--bg-hover)" : "transparent")
-                                        }
-                                    >
-                                        <span>{opt.flag}</span>
-                                        <span>{opt.label}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                    {/*auth buttons*/}
-                    {isLoggedIn ? (
-                        <button
-                            onClick={() => navigate("/profile")}
-                            className="cyber-btn flex items-center gap-1.5 text-sm px-4 py-2"
-                        >
-                            <LogIn size={15} /> Dashboard
-                        </button>
-                    ) : (
-                        <>
-                            <Link
-                                to="/login"
-                                className="cyber-btn-ghost flex items-center gap-1.5 text-sm px-4 py-2 hidden sm:flex"
-                            >
-                                <LogIn size={15} /> {translation.auth.login}
-                            </Link>
-                            <Link to="/signup" className="cyber-btn flex items-center gap-1.5 text-sm px-4 py-2">
-                                <UserPlus size={15} /> {translation.auth.signup}
-                            </Link>
-                        </>
-                    )}
-                </div>
-            </nav>
+                    </>
+                }
+            />
 
             {/*hero*/}
             <section className="flex flex-col items-center justify-center text-center px-4 py-20 md:py-32">
@@ -158,19 +77,13 @@ export default function Home() {
                     <img
                         src={logo}
                         alt="logo"
-                        className="h-20 w-20 md:h-28 md:w-28 rounded-2xl mx-auto"
-                        style={{border: "2px solid var(--border-glow)", boxShadow: "var(--glow-cyan)"}}
+                        className="h-20 w-20 md:h-28 md:w-28 rounded-2xl mx-auto border-2 border-(--border-glow) shadow-(--glow-cyan)"
                     />
                 </div>
-                <h1
-                    className="text-4xl md:text-6xl font-extrabold mb-4 leading-tight"
-                    style={{color: "var(--text-accent)", fontFamily: "var(--font-mono)"}}
-                >
+                <h1 className="text-4xl md:text-6xl font-extrabold mb-4 leading-tight text-(--text-accent) font-mono">
                     {translation.home.hero}
                 </h1>
-                <p className="text-lg md:text-xl max-w-xl mb-10" style={{color: "var(--text-dim)"}}>
-                    {translation.home.heroSub}
-                </p>
+                <p className="text-lg md:text-xl max-w-xl mb-10 text-(--text-dim)">{translation.home.heroSub}</p>
                 <div className="flex flex-wrap items-center justify-center gap-4">
                     <Link to={isLoggedIn ? "/profile" : "/signup"} className="cyber-btn px-8 py-3 text-base">
                         {translation.home.getStarted}
@@ -183,30 +96,25 @@ export default function Home() {
 
             {/*features*/}
             <section id="features" className="px-4 md:px-8 py-16 max-w-6xl mx-auto w-full">
-                <h2
-                    className="text-2xl md:text-3xl font-bold text-center mb-10"
-                    style={{color: "var(--text-primary)", fontFamily: "var(--font-mono)"}}
-                >
+                <h2 className="text-2xl md:text-3xl font-bold text-center mb-10 text-(--text-dim) font-mono">
                     {translation.home.featuresTitle}
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 cursor-pointer">
                     {features.map((feature, index) => {
                         const Icon = FEATURE_ICONS[index];
                         const color = TECH_STACK[index]?.color ?? "var(--text-accent)";
                         return (
                             <div key={index} className="cyber-card p-5 flex gap-4 items-start">
                                 <div
-                                    className="mt-0.5 p-2.5 rounded-xl shrink-0"
-                                    style={{background: `${color}22`, border: `1px solid ${color}55`}}
+                                    className="mt-1 p-3 rounded-xl shrink-0 border"
+                                    style={{color, borderColor: color}}
                                 >
                                     <Icon size={20} style={{color}} />
                                 </div>
                                 <div>
-                                    <p className="font-bold mb-1" style={{color: "var(--text-primary)"}}>
-                                        {feature.title}
-                                    </p>
-                                    <p className="text-sm leading-relaxed" style={{color: "var(--text-muted)"}}>
-                                        {feature.desc}
+                                    <p className="font-mono font-bold mb-1 text-(--text-heading)">{feature.title}</p>
+                                    <p className="text-sm leading-relaxed" style={{color}}>
+                                        {feature.description}
                                     </p>
                                 </div>
                             </div>
@@ -217,22 +125,15 @@ export default function Home() {
 
             {/*tech stack*/}
             <section className="px-4 md:px-8 py-16 max-w-4xl mx-auto w-full">
-                <h2
-                    className="text-2xl font-bold text-center mb-8"
-                    style={{color: "var(--text-primary)", fontFamily: "var(--font-mono)"}}
-                >
+                <h2 className="text-2xl font-bold text-center mb-8 text-(--text-dim) font-mono">
                     {translation.home.techTitle}
                 </h2>
-                <div className="flex flex-wrap justify-center gap-3">
+                <div className="flex flex-wrap justify-center gap-3 cursor-pointer">
                     {TECH_STACK.map(tech => (
                         <span
                             key={tech.label}
-                            className="px-4 py-2 rounded-full text-sm font-mono font-bold"
-                            style={{
-                                background: `${tech.color}22`,
-                                border: `1px solid ${tech.color}66`,
-                                color: tech.color
-                            }}
+                            className="px-4 py-2 rounded-full text-sm font-mono font-bold transition duration-300 hover:scale-120 text-(--text-primary)"
+                            style={{background: `${tech.color}`, border: `1px solid ${tech.color}`}}
                         >
                             {tech.label}
                         </span>
@@ -241,19 +142,17 @@ export default function Home() {
             </section>
 
             {/*footer*/}
-            <footer
-                className="mt-auto py-8 text-center"
-                style={{borderTop: "1px solid var(--border)", color: "var(--text-muted)"}}
-            >
+            <footer className="mt-auto py-8 text-center border-t border-(--border) text-(--text-muted)">
                 <p className="text-sm">{translation.home.footerNote}</p>
                 <div className="flex justify-center gap-6 mt-3 text-xs">
-                    <Link to="/login" style={{color: "var(--text-accent)"}}>
-                        {translation.auth.login}
+                    <Link to="/login" className="text-(--text-accent)">
+                        {translation.authentication.login}
                     </Link>
-                    <Link to="/signup" style={{color: "var(--text-accent)"}}>
-                        {translation.auth.signup}
+                    <Link to="/signup" className="text-(--text-accent)">
+                        {translation.authentication.signup}
                     </Link>
                 </div>
+                <p className="m-1 text-sm">v.alpha.1.1</p>
             </footer>
         </div>
     );

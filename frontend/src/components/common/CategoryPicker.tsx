@@ -1,10 +1,13 @@
+/*
+ * dropdown list to select a single category
+ */
 import {useState, useEffect, useRef} from "react";
 import {ChevronLeft, ChevronRight, XCircle, LoaderCircle, Box} from "lucide-react";
-import axiosConfig from "../../utilities/AxiosUtility";
-import {API_ENDPOINTS} from "../../utilities/apiEndpoint";
 import {RenderIcon} from "../../utilities/icon";
+import {useClickOutside} from "../../hooks/useClickOutside";
+import {useI18n} from "../../context/I18nContext";
 import type {CategoryType, CategoryPage, CategoryData} from "../../types/CategoryTypes";
-import toast from "react-hot-toast";
+import {categoryApi} from "../../utilities/api";
 
 interface Props {
     selectedId: number | null;
@@ -13,161 +16,167 @@ interface Props {
     disableAll?: boolean;
 }
 
+const PAGE_SIZE = 4;
+
 export default function CategoryPicker({selectedId, type, onSelect, disableAll}: Props) {
-    const [open, setOpen] = useState(false);
+    const {translation} = useI18n();
+
+    const [open, setOpen] = useState<boolean>(false);
     const [page, setPage] = useState<CategoryPage | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [pageIndex, setPageIndex] = useState(0);
+    const [loading, setLoading] = useState<boolean>(false);
+    const [pageIndex, setPageIndex] = useState<number>(0);
     const [selectedCategory, setSelectedCategory] = useState<CategoryData | null>(null);
+
     const containerRef = useRef<HTMLDivElement>(null);
+    useClickOutside(containerRef, () => setOpen(false), open);
 
-    useEffect(() => {
-        const handler = (e: MouseEvent) => !containerRef.current?.contains(e.target as Node) && setOpen(false);
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
-    }, []);
-
+    //render selected category when selected changes
     useEffect(() => {
         if (!selectedId) {
             setSelectedCategory(null);
             return;
         }
-        const found = page?.content.find(c => c.id === selectedId);
-        if (found) setSelectedCategory(found);
-        else
-            axiosConfig
-                .get(API_ENDPOINTS.FETCH_CATEGORY.replace("{id}", String(selectedId)))
-                .then(res => setSelectedCategory(res.data))
-                .catch(() => setSelectedCategory(null));
+        const found = page?.content.find(category => category.id === selectedId);
+        if (found) {
+            setSelectedCategory(found);
+            return;
+        }
+        //fetch the specific category if it isn't in the current page
+        const fetch = async () =>
+            await categoryApi.fetch(selectedId, setSelectedCategory, translation.category.fetchFailed);
+        fetch();
     }, [selectedId, page?.content]);
 
-    const fetchCategories = async () => {
-        setLoading(true);
-        try {
-            const response = await axiosConfig.get(API_ENDPOINTS.READ_CATEGORIES, {
-                params: {type: type, page: pageIndex, size: 4}
-            });
-            setPage({
-                content: response.data.content,
-                totalElements: response.data.total_elements,
-                totalPages: response.data.total_pages,
-                number: response.data.number,
-                size: response.data.size,
-                first: response.data.first,
-                last: response.data.last
-            });
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || "Fetch categories failed");
-        } finally {
-            setLoading(false);
-        }
-    };
-
+    //fetch pages
     useEffect(() => {
-        if (open) fetchCategories();
+        if (!open) return;
+        const fetch = async () =>
+            await categoryApi.read(
+                {type: "all", order: "UPDATED_DESCENDING", size: PAGE_SIZE},
+                "",
+                pageIndex,
+                setPage,
+                translation.category.fetchFailed
+            );
+        setLoading(false);
+        fetch();
     }, [open, pageIndex, type]);
 
+    //reset page when type changes
     useEffect(() => setPageIndex(0), [type]);
+
+    const categorySelectedStyles = (selected: boolean): string =>
+        `flex items-center gap-3 w-full p-3 text-sm rounded-lg transition duration-300 cursor-pointer md:hover:scale-120 md:active:scale-120
+         ${
+             selected
+                 ? "bg-(--bg-hover) text-(--text-accent) font-bold"
+                 : "hover:bg-(--bg-hover) hover:text-(--text-accent)"
+         }`;
 
     return (
         <div className="relative flex-1" ref={containerRef}>
             <button
-                onClick={() => setOpen(!open)}
-                className="flex w-full items-center gap-3 rounded-lg border border-cyan-400/30 bg-black/40 px-3 py-1 text-cyan-200 text-xs transition hover:border-cyan-400/60 hover:shadow-[0_0_10px_rgba(34,211,238,0.2)] hover:cursor-pointer"
+                onClick={() => setOpen(p => !p)}
+                className="flex w-full items-center gap-3 rounded-xl p-3 border transition duration-300 cursor-pointer md:hover:scale-120 md:active:scale-120 border-(--border) bg-(--bg-card) text-(--text-accent)"
             >
                 {selectedId && selectedCategory ? (
                     <RenderIcon
                         icon={selectedCategory.icon}
                         name={selectedCategory.name}
-                        imageSize="h-4 w-4"
-                        charSize="text-xs"
-                        boxSize={12}
+                        imageSize="h-5 w-5"
+                        charSize="text-lg"
+                        boxSize={15}
                     />
                 ) : (
-                    <Box size={12} className="text-cyan-400/70" />
+                    <Box size={15} className="text-(--text-muted)" />
                 )}
-                <span className="truncate text-sm font-medium">
-                    {selectedId ? selectedCategory?.name || "Loading..." : "All categories"}
+                <span className="truncate font-bold">
+                    {selectedId
+                        ? selectedCategory?.name || translation.common.loading
+                        : translation.common.allCategories}
                 </span>
             </button>
 
+            {/*dropdown list*/}
             {open && (
-                <div className="absolute left-1/2 -translate-x-1/2 z-10 mt-3 w-50 rounded-xl border border-cyan-400/30 bg-[#0b0f1a] p-3 shadow-2xl">
-                    <div className="flex items-center justify-between mb-1 border-b border-cyan-400/10 pb-1">
-                        <span className="text-xs font-mono font-semibold uppercase truncate text-cyan-400/50">
-                            Select Category
+                <div className="absolute left-1/2 -translate-x-1/2 z-20 mt-3 w-52 rounded-xl p-3 bg-(--bg-base) border border-(--border) cyber-dropdown">
+                    <div className="flex items-center justify-between mb-3 pb-1 border-b border-(--border)">
+                        <span className="uppercase tracking-widest font-bold text-(--text-accent)">
+                            {translation.record.category}
                         </span>
                         <button
-                            type="button"
                             onClick={() => setOpen(false)}
-                            className="text-red-600 hover:text-red-400 transition cursor-pointer"
+                            className="text-(--text-wrong) hover:text-(--text-accent) cursor-pointer hover:scale-120 active:scale-120 transition duration-300"
                         >
                             <XCircle size={15} />
                         </button>
                     </div>
 
-                    <div className="mb-1">
-                        {!disableAll && (
+                    {/*all categories button*/}
+                    {!disableAll && (
+                        <button
+                            onClick={() => {
+                                onSelect(null);
+                                setOpen(false);
+                            }}
+                            className={`group ${categorySelectedStyles(selectedId === null)}`}
+                        >
+                            <Box
+                                size={15}
+                                className={`group-hover:scale-120 group-hover:text-(--text-accent) group-active:scale-120 group-active:text-(--text-accent) transition duration-300 ${selectedId === null ? "text-(--text-accent)" : "text-(--text-primary)"}`}
+                            />
+                            <span>{translation.common.allCategories}</span>
+                        </button>
+                    )}
+
+                    {/*categories list*/}
+                    {loading ? (
+                        <div className="flex justify-center py-3">
+                            <LoaderCircle className="animate-spin text-(--text-accent)" size={18} />
+                        </div>
+                    ) : page?.content.length ? (
+                        page.content.map(category => (
                             <button
-                                type="button"
+                                key={category.id}
                                 onClick={() => {
-                                    onSelect(null);
+                                    onSelect(category.id);
                                     setOpen(false);
                                 }}
-                                className={`flex items-center gap-3 w-full text-left m-1 p-2 rounded-xl text-xs transition duration-300 hover:cursor-pointer text-cyan-600 ${selectedId === null ? "bg-cyan-400/30 font-bold" : "hover:bg-cyan-400/30"}`}
+                                className={categorySelectedStyles(selectedId === category.id)}
                             >
-                                <RenderIcon icon={null} name="all" boxSize={14} />
-                                <span>All Categories</span>
+                                <div className="group w-5 flex justify-center">
+                                    <RenderIcon
+                                        icon={category.icon}
+                                        name={category.name}
+                                        imageSize="h-5 w-5"
+                                        charSize="text-lg"
+                                        boxSize={15}
+                                        // className={`group-hover:scale-120 group-active:scale-120 ${selectedId ? "text-(--text-accent)" : "text-(--text-primary)"}`}
+                                    />
+                                </div>
+                                <span className="truncate">{category.name}</span>
                             </button>
-                        )}
+                        ))
+                    ) : (
+                        <div className="py-3 text-center text-(--text-accent)">{translation.common.noItems}</div>
+                    )}
 
-                        {loading ? (
-                            <div className="flex justify-center py-6">
-                                <LoaderCircle className="animate-spin text-cyan-400" size={20} />
-                            </div>
-                        ) : page?.content.length ? (
-                            page.content.map(category => (
-                                <button
-                                    key={category.id}
-                                    type="button"
-                                    onClick={() => {
-                                        onSelect(category.id);
-                                        setOpen(false);
-                                    }}
-                                    className={`flex items-center gap-3 w-full text-left m-1 p-2 rounded-xl text-xs transition duration-300 hover:cursor-pointer text-cyan-600 ${selectedId === category.id ? "bg-cyan-400/30 font-bold" : "hover:bg-cyan-400/30"}`}
-                                >
-                                    <div className="w-5 flex justify-center">
-                                        <RenderIcon
-                                            icon={category.icon}
-                                            name={category.name}
-                                            imageSize="h-4 w-4"
-                                            charSize="text-sm"
-                                            boxSize={14}
-                                        />
-                                    </div>
-                                    <span className="truncate">{category.name}</span>
-                                </button>
-                            ))
-                        ) : (
-                            <div className="py-4 text-center text-xs text-cyan-400/50">No categories found</div>
-                        )}
-                    </div>
-
-                    <div className="flex items-center justify-between pt-1 border-t border-cyan-400/10">
+                    {/*pagination*/}
+                    <div className="flex items-center justify-between mt-3 pt-1 border-t border-(--border)">
                         <button
                             disabled={!page || page.first || loading}
                             onClick={() => setPageIndex(p => p - 1)}
-                            className="text-cyan-400 hover:text-cyan-200 disabled:opacity-10 cursor-pointer"
+                            className="cursor-pointer active:scale-120 hover:scale-120 text-(--text-accent) transition duration-120 disabled:opacity-30 disabled:cursor-not-allowed disabled:text-(--text-muted)"
                         >
                             <ChevronLeft size={18} />
                         </button>
-                        <span className="text-xs font-mono font-semibold text-cyan-400/50">
-                            {page ? page.number + 1 : 1} / {page?.totalPages || 1}
+                        <span className="font-mono text-(--text-muted)">
+                            {(page?.number ?? 0) + 1} / {page?.totalPages || 1}
                         </span>
                         <button
                             disabled={!page || page.last || loading}
                             onClick={() => setPageIndex(p => p + 1)}
-                            className="text-cyan-400 hover:text-cyan-200 disabled:opacity-10 cursor-pointer"
+                            className="cursor-pointer active:scale-120 hover:scale-120 text-(--text-accent) transition duration-120 disabled:opacity-30 disabled:cursor-not-allowed disabled:text-(--text-muted)"
                         >
                             <ChevronRight size={18} />
                         </button>
