@@ -1,0 +1,19 @@
+# Caesar Financial Tracker — robots.txt
+ 
+# Allow Googlebot to index the frontend
+User-agent: Googlebot
+Allow: /
+Disallow: /login
+Disallow: /signup
+Disallow: /profile
+Disallow: /category
+Disallow: /record
+Disallow: /summary
+Disallow: /settings
+ 
+# Block all other bots entirely
+User-agent: *
+Disallow: /
+ 
+# Sitemap location
+Sitemap: https://caesaris.com/sitemap.xml
