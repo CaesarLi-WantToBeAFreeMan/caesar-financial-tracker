@@ -1,191 +1,109 @@
-import {createContext, useContext, useState, useCallback, useMemo, type ReactNode} from "react";
-import type {Locale} from "./I18nContext";
+/*
+ * manage setting options
+ */
 
-//types
-export type FontSize = "xs" | "sm" | "md" | "lg" | "xl";
-export type UIStyle = "cyberpunk" | "ondark" | "classic";
-export type CurrencyDisplay = "symbol" | "code" | "symbolCode";
-export type DateFormatToken =
-    | "MMM/DD/YYYY"
-    | "MM/DD/YYYY"
-    | "DD/MMM/YYYY"
-    | "DD/MM/YYYY"
-    | "YYYY/MM/DD"
-    | "MMMM/DD/YYYY"
-    | "DD/MMMM/YYYY"
-    | "MMM-DD-YYYY"
-    | "MM-DD-YYYY"
-    | "DD-MMM-YYYY"
-    | "DD-MM-YYYY"
-    | "YYYY-MM-DD"
-    | "MM/DD"
-    | "DD/MM"
-    | "MM-DD"
-    | "DD-MM";
+import {createContext, useContext, useState, useCallback, type ReactNode} from "react";
+import type {Locale} from "./I18nContext";
+import {storage} from "../utilities/storage";
+import {
+    formatPrice,
+    CURRENCY_DISPLAY_OPTIONS,
+    CURRENCY_CODES,
+    type CurrencyCode,
+    type PriceFormatOptions
+} from "../utilities/prices";
+import {formatDate, type DateFormatToken} from "../utilities/dates";
+
+//re-export for all options & types
+export {CURRENCY_DISPLAY_OPTIONS, CURRENCY_CODES};
+export type {CurrencyCode, PriceFormatOptions, DateFormatToken};
+
+//comment for now
+// export type FontSize = "xs" | "sm" | "md" | "lg" | "xl";
+// export type UIStyle = "cyberpunk" | "ondark" | "classic";
 
 export interface AppSettings {
-    thousandsSeparator: string; //"," default
-    thousandthsSeparator: string; //" " default
-    separatorNumber: 3 | 4; //3 for english, 4 for chinese
-    currencySymbol: string; //"$"
-    currencyDisplay: CurrencyDisplay;
-    floatPlaces: 0 | 1 | 2;
+    //currency
+    currencyCode: CurrencyCode;
+    currencySymbol: string;
+    //price
+    separatorPlaces: 0 | 1 | 2 | 3 | 4 | 5;
+    thousandsSeparator: string;
+    thousandthsSeparator: string;
+    decimalPlaces: 0 | 1 | 2;
+    //date & time
     dateFormat: DateFormatToken;
-    timezone: string; //IANA tz string, e.g. "Asia/Taipei"
-    uiStyle: UIStyle;
-    fontSize: FontSize;
+    timezone: string;
+    // uiStyle: UIStyle;
+    // fontSize: FontSize;
 }
 
 //locale defaults
 export function defaultsForLocale(locale: Locale): AppSettings {
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const defaultValues: AppSettings = {
-        thousandsSeparator: ",",
-        thousandthsSeparator: " ",
-        separatorNumber: locale === "en-UK" || locale === "en-US" ? 3 : 4,
-        currencySymbol: locale === "en-UK" ? "£" : locale === "zh-CN" ? "¥" : "$",
-        currencyDisplay: "symbol",
-        floatPlaces: locale === "zh-TW" ? 0 : 2,
-        dateFormat: locale === "en-UK" ? "DD/MMM/YYYY" : locale === "en-US" ? "MMM/DD/YYYY" : "YYYY/MM/DD",
-        timezone: timeZone,
-        uiStyle: "cyberpunk",
-        fontSize: "sm"
+    const codeMap: Record<Locale, CurrencyCode> = {"en-US": "USD", "en-UK": "GBP", "zh-TW": "TWD", "zh-CN": "CNY"};
+
+    const fmtMap: Record<Locale, DateFormatToken> = {
+        "en-US": "MMM/DD/YYYY",
+        "en-UK": "DD/MMM/YYYY",
+        "zh-TW": "YYYY/MM/DD",
+        "zh-CN": "YYYY/MM/DD"
     };
-    return defaultValues;
+
+    return {
+        currencyCode: codeMap[locale],
+        currencySymbol: CURRENCY_DISPLAY_OPTIONS[codeMap[locale]][0],
+        separatorPlaces: locale.slice(0, 2) === "zh" ? 4 : 3,
+        thousandsSeparator: ",",
+        thousandthsSeparator: ".",
+        decimalPlaces: locale === "zh-TW" ? 0 : 2,
+        dateFormat: fmtMap[locale],
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        // uiStyle: "cyberpunk",
+        // fontSize: "sm"
+    };
 }
 
-//currency options per locale
-export const CURRENCY_OPTIONS: Record<Locale, {symbol: string; code: string; symbolCode: string}[]> = {
-    "en-US": [{symbol: "$", code: "USD", symbolCode: "US$"}],
-    "en-UK": [{symbol: "£", code: "GBP", symbolCode: "GB£"}],
-    "zh-TW": [{symbol: "$", code: "NTD", symbolCode: "NT$"}],
-    "zh-CN": [{symbol: "¥", code: "CNY", symbolCode: "CN¥"}]
-};
-
-export const DATE_FORMAT_OPTIONS: DateFormatToken[] = [
-    "MMM/DD/YYYY",
-    "MMMM/DD/YYYY",
-    "MM/DD/YYYY",
-    "DD/MMM/YYYY",
-    "DD/MMMM/YYYY",
-    "DD/MM/YYYY",
-    "YYYY/MM/DD",
-    "MMM-DD-YYYY",
-    "MM-DD-YYYY",
-    "DD-MMM-YYYY",
-    "DD-MM-YYYY",
-    "YYYY-MM-DD",
-    "MM/DD",
-    "DD/MM",
-    "MM-DD",
-    "DD-MM"
-];
-
-//format helpers
-const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const MONTH_LONG = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December"
-];
-
-export function formatDate(dateString: string, format: DateFormatToken, timeZone?: string): string {
-    try {
-        const date = new Date(dateString + "T12:00:00");
-        if (isNaN(date.getTime())) return dateString;
-        const options: Intl.DateTimeFormatOptions = timeZone ? {timeZone: timeZone} : {};
-        const [year, month, day] = [
-            new Intl.DateTimeFormat("en", {year: "numeric", ...options}).format(date),
-            date.getMonth(),
-            new Intl.DateTimeFormat("en", {day: "2-digit", ...options}).format(date)
-        ];
-        const MM = String(month + 1).padStart(2, "0");
-        const DD = day.padStart(2, "0");
-        const MMM = MONTH_SHORT[month];
-        const MMMM = MONTH_LONG[month];
-        const YYYY = year;
-        return format
-            .replace("MMMM", MMMM)
-            .replace("MMM", MMM)
-            .replace("MM", MM)
-            .replace("DD", DD)
-            .replace("YYYY", YYYY);
-    } catch {
-        return dateString;
-    }
-}
-
-export function formatPrice(
-    price: number | null,
-    settings: Pick<
-        AppSettings,
-        | "thousandsSeparator"
-        | "thousandthsSeparator"
-        | "separatorNumber"
-        | "currencySymbol"
-        | "currencyDisplay"
-        | "floatPlaces"
-    >
-): string {
-    if (price == null) return "∞";
-    const {thousandsSeparator, thousandthsSeparator, separatorNumber, currencySymbol, currencyDisplay, floatPlaces} =
-        settings;
-    let [integer, fractional] = Math.abs(price).toFixed(floatPlaces).split(".");
-    integer = integer.replace(new RegExp(`\\d(?=(\\d{${separatorNumber}})+$)`, "g"), `$&${thousandsSeparator}`);
-    if (floatPlaces > 0 && fractional)
-        fractional =
-            "." + fractional.replace(new RegExp(`(\\d{${separatorNumber}})(?=\\d)`, "g"), `$1${thousandthsSeparator}`);
-    const symbol = currencyDisplay === "symbol" ? currencySymbol : currencyDisplay === "code" ? "" : currencySymbol;
-    return `${symbol}${price < 0 ? "-" : ""}${integer}${fractional}`;
-}
-
-//context
+//context type
 interface SettingsContextType {
     settings: AppSettings;
     updateSetting: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void;
     resetToDefaults: (locale: Locale) => void;
     formatPrice: (price: number | null) => string;
-    formatDate: (dateStr: string) => string;
+    formatDate: (dateString: string) => string;
 }
 
 const SettingsContext = createContext<SettingsContextType | null>(null);
 
-//provider
-const KEY = "app-settings";
+//storage
+const STORAGE_KEY = "settings";
 
 function loadSettings(): AppSettings | null {
     try {
-        const raw = localStorage.getItem(KEY);
+        const raw = storage.get(STORAGE_KEY);
         return raw ? (JSON.parse(raw) as AppSettings) : null;
     } catch {
         return null;
     }
 }
 
-function saveSettings(setting: AppSettings) {
-    try {
-        localStorage.setItem(KEY, JSON.stringify(setting));
-    } catch {}
+function saveSettings(settings: AppSettings): void {
+    storage.set(STORAGE_KEY, JSON.stringify(settings));
 }
 
+//provider
 export function SettingsProvider({children}: {children: ReactNode}) {
     const [settings, setSettings] = useState<AppSettings>(() => {
-        return loadSettings() ?? defaultsForLocale((localStorage.getItem("locale") as Locale | null) ?? "en-US");
+        const stored = loadSettings();
+        if (stored) return stored;
+        const locale = (storage.get("locale") ?? "en-US") as Locale;
+        return defaultsForLocale(locale);
     });
 
-    useMemo(() => {
-        const map: Record<FontSize, string> = {xs: "12px", sm: "14px", md: "16px", lg: "18px", xl: "20px"};
-        document.documentElement.style.setProperty("--base-font-size", map[settings.fontSize]);
-    }, [settings.fontSize]);
+    //font CSS
+    // useEffect(() => {
+    //     const map: Record<FontSize, string> = {xs: "12px", sm: "14px", md: "16px", lg: "18px", xl: "20px"};
+    //     document.documentElement.style.setProperty("--base-font-size", map[settings.fontSize]);
+    // }, [settings.fontSize]);
 
     const updateSetting = useCallback(<K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
         setSettings(prev => {
@@ -201,16 +119,39 @@ export function SettingsProvider({children}: {children: ReactNode}) {
         saveSettings(defaults);
     }, []);
 
-    const formatPriceFunc = useCallback((price: number | null) => formatPrice(price, settings), [settings]);
+    const priceOptions: PriceFormatOptions = {
+        currencySymbol: settings.currencySymbol,
+        separatorPlaces: settings.separatorPlaces,
+        thousandsSeparator: settings.thousandsSeparator,
+        decimalPlaces: settings.decimalPlaces,
+        decimalSeparator: settings.thousandthsSeparator
+    };
 
-    const formatDateFunc = useCallback(
-        (dateStr: string) => formatDate(dateStr, settings.dateFormat, settings.timezone),
+    const formatPriceFunction = useCallback(
+        (price: number | null) => formatPrice(price, priceOptions),
+        [
+            settings.currencySymbol,
+            settings.separatorPlaces,
+            settings.thousandsSeparator,
+            settings.decimalPlaces,
+            settings.thousandthsSeparator
+        ]
+    );
+
+    const formatDateFunction = useCallback(
+        (dateString: string) => formatDate(dateString, settings.dateFormat, settings.timezone),
         [settings.dateFormat, settings.timezone]
     );
 
     return (
         <SettingsContext.Provider
-            value={{settings, updateSetting, resetToDefaults, formatPrice: formatPriceFunc, formatDate: formatDateFunc}}
+            value={{
+                settings,
+                updateSetting,
+                resetToDefaults,
+                formatPrice: formatPriceFunction,
+                formatDate: formatDateFunction
+            }}
         >
             {children}
         </SettingsContext.Provider>
@@ -219,7 +160,7 @@ export function SettingsProvider({children}: {children: ReactNode}) {
 
 //hook
 export function useSettings(): SettingsContextType {
-    const context = useContext(SettingsContext);
-    if (!context) throw new Error("useSettings must be used within SettingsProvider");
-    return context;
+    const ctx = useContext(SettingsContext);
+    if (!ctx) throw new Error("useSettings must be used within SettingsProvider");
+    return ctx;
 }

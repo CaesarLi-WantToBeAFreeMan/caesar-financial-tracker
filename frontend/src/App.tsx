@@ -6,6 +6,7 @@ import {ThemeProvider} from "./context/ThemeContext";
 import {I18nProvider} from "./context/I18nContext";
 import {SettingsProvider} from "./context/SettingsContext";
 import {UserContextProvider} from "./context/UserContext";
+import {storage} from "./utilities/storage";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -14,9 +15,41 @@ import Profile from "./pages/Profile";
 import Category from "./pages/Category";
 import Record from "./pages/Record";
 import Summary from "./pages/Summary";
+import Settings from "./pages/Settings";
 
+//redirect to /profile when logged in, otherwise to /home
 function AuthRedirect() {
-    return !!localStorage.getItem("token") ? <Navigate to="/profile" replace /> : <Navigate to="/home" replace />;
+    return storage.get("token") ? <Navigate to="/profile" replace /> : <Navigate to="/login" replace />;
+}
+
+function ThemedToaster() {
+    return (
+        <Toaster
+            position="top-right"
+            toastOptions={{
+                duration: 3000,
+                style: {
+                    background: "var(--bg-base)",
+                    color: "var(--text-accent)",
+                    border: "1px solid var(--glow-purple)",
+                    borderRadius: "12px",
+                    backdropFilter: "blur(12px)",
+                    boxShadow: "0 0 20px var(--shadow)",
+                    fontFamily: "monospace",
+                    fontSize: "0.7rem"
+                },
+                success: {iconTheme: {primary: "var(--text-primary)", secondary: "var(--text-accent)"}},
+                error: {
+                    style: {
+                        color: "#F87171",
+                        border: "1px solid rgb(from var(--text-dim) r g b / 0.3)",
+                        boxShadow: "0 0 16px rgb(from var(--text-dim) r g b / 0.1)"
+                    },
+                    iconTheme: {primary: "var(--text-dim)", secondary: "var(--text-heading)"}
+                }
+            }}
+        />
+    );
 }
 
 export default function App() {
@@ -25,31 +58,7 @@ export default function App() {
             <I18nProvider>
                 <SettingsProvider>
                     <UserContextProvider>
-                        <Toaster
-                            position="top-right"
-                            toastOptions={{
-                                duration: 3000,
-                                style: {
-                                    background: "rgba(10,0,31,0.95)",
-                                    color: "#22d3ee",
-                                    border: "1px solid rgba(34,211,238,0.4)",
-                                    borderRadius: "12px",
-                                    backdropFilter: "blur(12px)",
-                                    boxShadow: "0 0 20px rgba(34,211,238,0.3)",
-                                    fontFamily: "monospace",
-                                    fontSize: "0.875rem"
-                                },
-                                success: {iconTheme: {primary: "#22d3ee", secondary: "#0a001f"}},
-                                error: {
-                                    style: {
-                                        color: "#f87171",
-                                        border: "1px solid rgba(248,113,113,0.4)",
-                                        boxShadow: "0 0 20px rgba(248,113,113,0.2)"
-                                    },
-                                    iconTheme: {primary: "#f87171", secondary: "#0a001f"}
-                                }
-                            }}
-                        />
+                        <ThemedToaster />
                         <BrowserRouter>
                             <Routes>
                                 <Route path="/" element={<AuthRedirect />} />
@@ -60,7 +69,7 @@ export default function App() {
                                 <Route path="/category" element={<Category />} />
                                 <Route path="/record" element={<Record />} />
                                 <Route path="/summary" element={<Summary />} />
-                                {/* <Route path="/settings" element={<Settings />} /> */}
+                                <Route path="/settings" element={<Settings />} />
                                 <Route path="*" element={<Navigate to="/home" replace />} />
                             </Routes>
                         </BrowserRouter>

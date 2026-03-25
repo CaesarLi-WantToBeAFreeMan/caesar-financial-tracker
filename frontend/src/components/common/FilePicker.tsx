@@ -1,5 +1,6 @@
 import {Upload, X} from "lucide-react";
 import {useRef} from "react";
+import {useI18n} from "../../context/I18nContext";
 
 interface Props {
     file: File | null;
@@ -9,6 +10,7 @@ interface Props {
 
 export function FilePicker({file, onChange, onClear}: Props) {
     const inputRef = useRef<HTMLInputElement | null>(null);
+    const {translation} = useI18n();
 
     return (
         <div className="w-full">
@@ -21,11 +23,16 @@ export function FilePicker({file, onChange, onClear}: Props) {
 
             <div
                 onClick={() => inputRef.current?.click()}
-                className="group flex items-center justify-between rounded-xl border border-cyan-400/20 bg-black/40 py-1 px-3 transition hover:border-cyan-400/60 hover:shadow-[0_0_15px_rgba(34,211,238,0.3)] hover:cursor-pointer"
+                className="group flex items-center justify-between rounded-xl border border-(--border) bg-(--bg-surface) p-3 transition duration-300 cursor-pointer md:hover:scale-120 md:active:scale-120"
             >
                 <div className="flex items-center gap-3 overflow-hidden">
-                    <Upload className="text-cyan-400 group-hover:scale-120 transition duration-300" size={18} />
-                    <span className="text-sm text-cyan-300 truncate">{file ? file.name : "Upload Image"}</span>
+                    <Upload
+                        className="text-(--text-primary) group-hover:text-(--text-accent) group-active:text-(--text-accent) transition duration-300"
+                        size={18}
+                    />
+                    <span className="text-(--parimary) truncate group-hover:text-(--text-accent) group-active:text-(--text-accent)">
+                        {file ? file.name : translation.common.uploadFile}
+                    </span>
                 </div>
 
                 {file && (
@@ -35,7 +42,7 @@ export function FilePicker({file, onChange, onClear}: Props) {
                             e.stopPropagation();
                             onClear(e);
                         }}
-                        className="text-red-400 hover:text-red-300 hover:cursor-pointer transition duration-300"
+                        className="text-(--text-wrong) cursor-pointer hover:scale-120 active:scale-120 transition duration-300"
                     >
                         <X size={18} />
                     </button>

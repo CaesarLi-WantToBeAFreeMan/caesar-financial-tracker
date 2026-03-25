@@ -1,12 +1,14 @@
-import {Box, Pen, Trash} from "lucide-react";
-import type {CategoryData} from "../../types/CategoryTypes";
-import {RenderIcon} from "../../utilities/icon";
+/*
+ * display responsive grid for categories/records
+ */
 import {useEffect, useState} from "react";
+import {Box, Pen, Trash} from "lucide-react";
+import {RenderIcon} from "../../utilities/icon";
+import {useSettings} from "../../context/SettingsContext";
+import {useI18n} from "../../context/I18nContext";
+import type {CategoryData} from "../../types/CategoryTypes";
 import type {RecordData} from "../../types/RecordTypes";
-import axiosConfig from "../../utilities/AxiosUtility";
-import {API_ENDPOINTS} from "../../utilities/apiEndpoint";
-import toast from "react-hot-toast";
-import {priceFormat} from "../../utilities/prices";
+import {categoryApi} from "../../utilities/api";
 
 interface Props {
     title: string;
@@ -18,60 +20,81 @@ interface Props {
 }
 
 export default function ItemList({title, items, totalElements, onEdit, onDelete, isRecord = false}: Props) {
-    const isIncome = (type?: string) => type === "income";
+    const {formatPrice, formatDate} = useSettings();
+    const {translation} = useI18n();
+
+    //category cache for records
     const [categories, setCategories] = useState<Record<number, CategoryData>>({});
 
+    //fetch categories
     useEffect(() => {
-        if (!isRecord || items.length === 0) return;
+        if (!isRecord || !items.length) return;
+
         const records = items as RecordData[];
-        const categoryIds = Array.from(new Set(records.map(record => record.category_id).filter(Boolean))) as number[];
-        if (categoryIds.length === 0) return;
-        Promise.all(
-            categoryIds.map(categoryId =>
-                axiosConfig
-                    .get(API_ENDPOINTS.FETCH_CATEGORY.replace("{id}", String(categoryId)))
-                    .then(response => response.data)
-            )
-        )
-            .then((result: CategoryData[]) => {
-                const map: Record<number, CategoryData> = {};
-                result.forEach(category => (map[category.id!] = category));
-                setCategories(prev => ({...prev, ...map}));
-            })
-            .catch((error: any) => toast.error(error?.response?.data?.message || "Fetch categories failed"));
+        const uniqueIds = Array.from(new Set(records.map(record => record.category_id).filter(Boolean))) as number[];
+
+        if (!uniqueIds.length) return;
+
+        const fetch = async () => {
+            const map: Record<number, CategoryData> = {};
+
+            await Promise.all(
+                uniqueIds.map((id: number) =>
+                    categoryApi.fetch(
+                        id,
+                        category => {
+                            if (category && category.id) map[category.id] = category;
+                        },
+                        translation.category.fetchFailed
+                    )
+                )
+            );
+
+            setCategories(previous => ({...previous, ...map}));
+        };
+        fetch();
     }, [items, isRecord]);
 
+    const isIncome = (type?: string) => type === "income";
+
     return (
-        <div className="rounded-xl bg-[#0b0f1a] border border-cyan-500/20 p-6 shadow-[0_0_40px_rgba(34,211,238,0.08)]">
-            <div className="mb-5 flex items-center justify-between group">
+        <div className="cyber-card p-3 md:p-6">
+            {/*header row*/}
+            <div className="flex items-center justify-between mb-3 group">
                 <div className="flex items-center gap-3">
-                    <div className="h-3 w-3 rounded-full bg-cyan-400 animate-pulse group-hover:animate-bounce" />
-                    <h2 className="text-lg font-semibold tracking-wide text-cyan-300">{title}</h2>
+                    <span className="w-3 h-3 rounded-full animate-pulse group-hover:animate-bounce group-active:animate-bounce bg-(--text-accent)" />
+                    <h2 className="text-xl font-bold tracking-wide text-(--text-accent)">{title}</h2>
                 </div>
-                <span className="text-sm text-cyan-400/80 bg-cyan-400/5 p-3 rounded-full border border-cyan-400/10">
-                    Total: <span className="text-cyan-300 font-bold ml-1">{totalElements}</span>
+                <span className="px-3 py-2 rounded-full border border-(--border) text-(--text-dim) bg-(--bg-card)">
+                    {translation.common.total}: <strong className="text-(--text-accent)">{totalElements}</strong>
                 </span>
             </div>
 
+            {/*empty*/}
             {!items.length ? (
-                <div className="flex flex-col items-center justify-center py-12 border-3 border-dashed border-cyan-500/10 rounded-xl bg-cyan-500/[0.02]">
-                    <Box size={50} className="text-cyan-500/20 mb-3" />
-                    <p className="text-sm text-cyan-400/50 font-medium">No items found</p>
-                    <p className="text-xs text-cyan-500/30">Try importing a file or adding an item</p>
+                <div className="flex flex-col items-center justify-center py-12 rounded-xl border-2 border-dashed border-(--border) bg-(--bg-card)">
+                    <Box size={50} className="text-(--text-accent) mb-3" />
+                    <p className="text-(--text-accent) font-bold">{translation.common.noItems}</p>
+                    <p className="mt-1 text-(--text-muted) opacity-50">{translation.common.noItemsHint}</p>
                 </div>
             ) : (
-                <div className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(300px,1fr))]">
+                /*1 column on mobile, 2+ for pc*/
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
                     {(items as (CategoryData | RecordData)[]).map(item => {
                         const category = isRecord ? categories[(item as RecordData).category_id!] : null;
+                        const income = isRecord ? isIncome(category?.type) : isIncome(item.type);
+
                         return (
                             <div
                                 key={item.id}
-                                className="group relative flex items-center gap-3 rounded-lg p-3 bg-[#111827]/80 backdrop-blur border border-white/5 transition duration-300 hover:border-cyan-400/40 hover:shadow-[0_0_30px_rgba(34,211,238,0.18)] hover:bg-cyan-400/10 hover:cursor-pointer"
+                                className={`group relative flex items-center gap-3 rounded-xl p-3 transition duration-300 cursor-pointer border ${income ? "border-(--text-correct)" : "border-(--text-wrong)"} bg-(--bg-base) hover:border-(--border-glow) hover:shadow-(--glow-cyan) md:hover:scale-105 md:active:scale-105 active:border-(--border-glow) active:shadow-(--glow-cyan)`}
                             >
+                                {/*icon*/}
                                 <div
-                                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${
-                                        isIncome(item.type) ? "bg-green-400/20" : "bg-red-400/20"
-                                    } border border-cyan-400/30 text-cyan-300 transition duration-300 group-hover:shadow-[0_0_18px_rgba(34,211,238,0.5)]`}
+                                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition duration-300 border border-(--border) group-hover:shadow-(--glow-cyan)`}
+                                    style={{
+                                        background: `rgb(from var(--${income ? "text-correct" : "text-wrong"}) r g b / 0.1)`
+                                    }}
                                 >
                                     <RenderIcon
                                         icon={item.icon}
@@ -79,68 +102,76 @@ export default function ItemList({title, items, totalElements, onEdit, onDelete,
                                         className="group-hover:animate-bounce"
                                     />
                                 </div>
+
+                                {/*content*/}
                                 <div className="flex-1 min-w-0">
-                                    <div className="flex flex-cols gap-1 justify-start items-center">
+                                    {/*name + type(record only)*/}
+                                    <div className="flex items-center gap-3 flex-wrap">
                                         <p
-                                            className={`text-sm font-semibold ${
-                                                isIncome(item.type) ? "text-green-400" : "text-red-400"
-                                            } truncate transition group-hover:text-cyan-400`}
-                                            title={item.name}
+                                            className={`font-bold truncate transition duration-300 group-hover:text-(--text-accent) group-active:text-(--text-accent) ${income ? "text-(--text-correct)" : "text-(--text-wrong)"}`}
                                         >
                                             {item.name}
                                         </p>
                                         {isRecord && (
                                             <>
-                                                <p className="text-cyan-400">•</p>
-                                                <p className="text-[9px] text-white-400">{(item as RecordData).date}</p>
+                                                <span className="text-(--text-accent) text-xl">•</span>
+                                                <span className="text-(--text-muted) font-mono">
+                                                    {formatDate((item as RecordData).date)}
+                                                </span>
                                             </>
                                         )}
                                     </div>
-                                    <div className="flex items-center gap-2 mt-1">
+
+                                    {/*type + price*/}
+                                    <div className="flex items-center gap-3 mt-1 flex-wrap">
                                         {isRecord && category ? (
-                                            <div className="flex flex-cols gap-1 justify-start items-center">
+                                            <>
                                                 <span
-                                                    className={`text-[10px] px-2 py-0.5 rounded-sm font-bold uppercase tracking-tighter border ${
-                                                        category && isIncome(category.type)
-                                                            ? "text-green-400 border-green-400/20 bg-green-400/5"
-                                                            : "text-red-400 border-red-400/20 bg-red-400/5"
-                                                    }`}
+                                                    className={`px-3 py-2 rounded-full font-bold uppercase tracking-tighter border
+                                                        ${income ? "text-(--text-correct)" : "text-(--text-wrong)"}`}
+                                                    style={{
+                                                        borderColor: `rgb(from var(--${income ? "text-correct" : "text-wrong"}) r g b / 0.1)`,
+                                                        backgroundColor: `rgb(from var(--${income ? "text-correct" : "text-wrong"}) r g b / 0.1)`
+                                                    }}
                                                 >
-                                                    {category?.name || "Loading..."}
+                                                    {category.name}
                                                 </span>
-                                                <p className="text-cyan-400">•</p>
-                                                <p
-                                                    className={`text-sm font-mono font-bold ${isIncome(category.type) ? "text-green-400" : "text-red-400"}`}
+                                                <span className="text-(--text-accent) text-xl">•</span>
+                                                <span
+                                                    className={`font-mono font-bold"
+                                                        ${income ? "text-(--text-correct)" : "text-(--text-wrong)"}`}
                                                 >
-                                                    {isIncome(category.type) ? "+" : "-"}{" "}
-                                                    {priceFormat((item as RecordData).price)}
-                                                </p>
-                                            </div>
+                                                    {income ? "+" : "-"} {formatPrice((item as RecordData).price)}
+                                                </span>
+                                            </>
                                         ) : (
                                             <span
-                                                className={`text-[10px] px-2 py-0.5 rounded-sm font-bold uppercase tracking-tighter border ${
-                                                    isIncome(item.type)
-                                                        ? "text-green-400 border-green-400/20 bg-green-400/5"
-                                                        : "text-red-400 border-red-400/20 bg-red-400/5"
-                                                }`}
+                                                className={`px-3 py-2 rounded-xl font-bold uppercase tracking-tighter border"
+                                                    ${isIncome(item.type) ? "text-(--text-correct)" : "text-(--text-wrong)"}`}
+                                                style={{
+                                                    borderColor: `rgb(from var(--${income ? "text-correct" : "text-wrong"}) r g b / 0.1)`,
+                                                    backgroundColor: `rgb(from var(--${income ? "text-correct" : "text-wrong"}) r g b / 0.1)`
+                                                }}
                                             >
                                                 {item.type}
                                             </span>
                                         )}
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-1 opacity-0 translate-x-2 transition duration-300 group-hover:opacity-100 group-hover:translate-x-0">
+
+                                {/*edit & delete buttons*/}
+                                <div className="flex items-center gap-3 opacity-0 translate-x-2 transition duration-300 group-hover:opacity-100 group-hover:translate-x-0 group-focus-within:opacity-100 group-focus-within:translate-x-0">
                                     <button
                                         onClick={() => item.id && onEdit(item.id)}
-                                        className="rounded-md p-2 text-yellow-400/80 transition hover:text-yellow-300 hover:bg-yellow-400/10 hover:cursor-pointer"
+                                        className="rounded-xl p-3 transition opacity-50 duration-300 cursor-pointer md:hover:scale-120 md:active:scale-120 text-(--text-warning) hover:text-(--text-accent) hover:bg-(--text-warning) hover:opacity-90 active:text-(--text-accent) active:bg-(--text-warning) active:opacity-90"
                                     >
-                                        <Pen size={18} />
+                                        <Pen size={15} />
                                     </button>
                                     <button
                                         onClick={() => item.id && onDelete(item.id)}
-                                        className="rounded-md p-2 text-red-400/80 transition hover:text-red-300 hover:bg-red-400/10 hover:cursor-pointer"
+                                        className="rounded-xl p-3 transition opacity-50 duration-300 cursor-pointer md:hover:scale-120 md:active:scale-120 text-(--text-wrong) hover:text-(--text-accent) hover:bg-(--text-wrong) hover:opacity-90 active:text-(--text-accent) active:bg-(--text-wrong) active:opacity-90"
                                     >
-                                        <Trash size={18} />
+                                        <Trash size={15} />
                                     </button>
                                 </div>
                             </div>

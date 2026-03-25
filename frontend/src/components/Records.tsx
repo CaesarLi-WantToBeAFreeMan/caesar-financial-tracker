@@ -3,6 +3,7 @@ import type {RecordData, RecordFilter} from "../types/RecordTypes";
 import PricePicker from "./common/PricePicker";
 import CategoryPicker from "./common/CategoryPicker";
 import type {DataType} from "./common/OptionPicker";
+import {useI18n} from "../context/I18nContext";
 import {
     ArrowDownNarrowWide,
     ArrowDownZa,
@@ -16,6 +17,7 @@ import {
     CalendarArrowUp,
     ClockArrowDown,
     ClockArrowUp,
+    File,
     Trash
 } from "lucide-react";
 import OptionPicker from "./common/OptionPicker";
@@ -23,14 +25,14 @@ import {useEffect, useState} from "react";
 import {getDate} from "../utilities/dates";
 import IconPicker from "./common/IconPicker";
 import type {CategoryData} from "../types/CategoryTypes";
-import axiosConfig from "../utilities/AxiosUtility";
-import {API_ENDPOINTS} from "../utilities/apiEndpoint";
-import toast from "react-hot-toast";
 import {RenderIcon} from "../utilities/icon";
-import {priceFormat} from "../utilities/prices";
+import {useSettings} from "../context/SettingsContext";
 import type {ImportResponse} from "../types/ImportResponse";
 import {FilePicker} from "./common/FilePicker";
 import ImportErrorModal from "./common/ImportErrorModal";
+import {categoryApi, recordApi} from "../utilities/api";
+import toast from "react-hot-toast";
+import type {TranslationType} from "../types/TranslationType";
 
 interface FilterProps {
     filter: RecordFilter;
@@ -56,23 +58,28 @@ interface ImportProps {
     onClose: () => void;
 }
 
-const types: DataType<RecordFilter["type"]>[] = [
-    {label: "All", icon: <Banknote />, value: "all"},
-    {label: "Income", icon: <BanknoteArrowUp />, value: "income"},
-    {label: "Expense", icon: <BanknoteArrowDown />, value: "expense"}
+const types = (translation: TranslationType): DataType<RecordFilter["type"]>[] => [
+    {label: translation.common.all, icon: <Banknote />, value: "all"},
+    {label: translation.common.income, icon: <BanknoteArrowUp />, value: "income"},
+    {label: translation.common.expense, icon: <BanknoteArrowDown />, value: "expense"}
 ];
 
-const orders: DataType<RecordFilter["order"]>[] = [
-    {label: "Name ↑", icon: <ArrowUpAz />, value: "NAME_ASCENDING"},
-    {label: "Name ↓", icon: <ArrowDownZa />, value: "NAME_DESCENDING"},
-    {label: "Date ↑", icon: <CalendarArrowUp />, value: "DATE_ASCENDING"},
-    {label: "Date ↓", icon: <CalendarArrowDown />, value: "DATE_DESCENDING"},
-    {label: "Price ↑", icon: <BanknoteArrowUp />, value: "PRICE_ASCENDING"},
-    {label: "Price ↓", icon: <BanknoteArrowDown />, value: "PRICE_DESCENDING"},
-    {label: "Created ↑", icon: <ClockArrowUp />, value: "CREATED_ASCENDING"},
-    {label: "Created ↓", icon: <ClockArrowDown />, value: "CREATED_DESCENDING"},
-    {label: "Updated ↑", icon: <ArrowUpNarrowWide />, value: "UPDATED_ASCENDING"},
-    {label: "Updated ↓", icon: <ArrowDownNarrowWide />, value: "UPDATED_DESCENDING"}
+const recordTypes = (translation: TranslationType): DataType<"income" | "expense">[] => [
+    {label: translation.common.income, icon: <BanknoteArrowUp />, value: "income"},
+    {label: translation.common.expense, icon: <BanknoteArrowDown />, value: "expense"}
+];
+
+const orders = (translation: TranslationType): DataType<RecordFilter["order"]>[] => [
+    {label: translation.record.orders.nameAsc, icon: <ArrowUpAz />, value: "NAME_ASCENDING"},
+    {label: translation.record.orders.nameDesc, icon: <ArrowDownZa />, value: "NAME_DESCENDING"},
+    {label: translation.record.orders.dateAsc, icon: <CalendarArrowUp />, value: "DATE_ASCENDING"},
+    {label: translation.record.orders.dateDesc, icon: <CalendarArrowDown />, value: "DATE_DESCENDING"},
+    {label: translation.record.orders.priceAsc, icon: <BanknoteArrowUp />, value: "PRICE_ASCENDING"},
+    {label: translation.record.orders.priceDesc, icon: <BanknoteArrowDown />, value: "PRICE_DESCENDING"},
+    {label: translation.record.orders.createdAsc, icon: <ClockArrowUp />, value: "CREATED_ASCENDING"},
+    {label: translation.record.orders.createdDesc, icon: <ClockArrowDown />, value: "CREATED_DESCENDING"},
+    {label: translation.record.orders.updatedAsc, icon: <ArrowUpNarrowWide />, value: "UPDATED_ASCENDING"},
+    {label: translation.record.orders.updatedDesc, icon: <ArrowDownNarrowWide />, value: "UPDATED_DESCENDING"}
 ];
 
 const sizes: DataType<RecordFilter["size"]>[] = [
@@ -84,27 +91,29 @@ const sizes: DataType<RecordFilter["size"]>[] = [
 ];
 
 type FileType = "csv" | "tsv" | "xlsx" | "json";
+const fileTypes: DataType<FileType>[] = [
+    {label: "CSV", icon: <File />, value: "csv"},
+    {label: "TSV", icon: <File />, value: "tsv"},
+    {label: "Excel", icon: <File />, value: "xlsx"},
+    {label: "JSON", icon: <File />, value: "json"}
+];
 const EXAMPLES: Record<FileType, String> = {
-    csv: `
-name,type,date,price,category,icon,description
+    csv: `name,type,date,price,category,icon,description
 january salary,income,2026-01-01,1989.64,salary,https://cdn.jsdelivr.net/npm/emoji-datasource-apple/img/apple/64/1f45c.png,
 burger,expense,jan-01-2026,3.99,food,🍔,big mac,
 coffee,expense,jan/01/2026,5.99,drink,coffee,americano,
 doughnut,expense,01/01/2026,5.99,food,,,`,
-    tsv: `
-name\ttype\tdate\tprice\tcategory\ticon\tdescription
+    tsv: `name\ttype\tdate\tprice\tcategory\ticon\tdescription
 january salary\tincome\t2026-01-01\t1989.64\tsalary\thttps://cdn.jsdelivr.net/npm/emoji-datasource-apple/img/apple/64/1f45c.png\t
 burger\texpense\tjan-01-2026\t3.99\tfood\t🍔\tbig mac\t
 coffee\texpense\tjan/01/2026\t5.99\tdrink\tcoffee\tamericano\t
 doughnut\texpense\t01/01/2026\t5.99\tfood\t\t\t`,
-    xlsx: `
-| name              | type      | date          | price     | category  | icon                                                                          | descriptiin   |
+    xlsx: `| name              | type      | date          | price     | category  | icon                                                                          | descriptiin   |
 | january salary    | income    | 2026-01-01    | 1989.64   | salary    | https://cdn.jsdelivr.net/npm/emoji-datasource-apple/img/apple/64/1f45c.png    |               |
 | burger            | expense   | jan-01-2026   | 3.99      | food      | 🍔                                                                            | big mac       |
 | coffee            | expense   | jan/01/2026   | 5.99      | drink     | coffee                                                                        | americano     |
 | doughnut          | expense   | 01/01/2026    | 5.99      | food      |                                                                               |               |`,
-    json: `
-[
+    json: `[
     {
         "name": "january salary",
         "type": "income",
@@ -145,14 +154,15 @@ doughnut\texpense\t01/01/2026\t5.99\tfood\t\t\t`,
 };
 
 export function Filter({filter, onChange}: FilterProps) {
+    const {translation} = useI18n();
     const {type, order, size, dateStart, dateEnd, priceLow, priceHigh, categoryId} = filter;
     const typeIndex = Math.max(
         0,
-        types.findIndex(t => t.value === type)
+        types(translation).findIndex(t => t.value === type)
     );
     const orderIndex = Math.max(
         0,
-        orders.findIndex(o => o.value === order)
+        orders(translation).findIndex(o => o.value === order)
     );
     const sizeIndex = Math.max(
         0,
@@ -160,65 +170,79 @@ export function Filter({filter, onChange}: FilterProps) {
     );
 
     return (
-        <div className="mb-6 rounded-xl border border-cyan-400/20 bg-black/40 p-5 space-y-4">
+        <div className="mb-6 rounded-xl border border-(--border) bg-(--bg-surface) p-5 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="flex items-center gap-3">
-                    <label className="text-cyan-400">Type:</label>
+                    <label className="cyber-label">{translation.record.type}</label>
                     <OptionPicker
-                        data={types}
+                        data={types(translation)}
                         index={typeIndex}
-                        onChange={(index: number) => types[index] && onChange("type", types[index].value)}
+                        onChange={(index: number) =>
+                            types(translation)[index] && onChange("type", types(translation)[index].value)
+                        }
                     />
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <label className="text-cyan-400">Type:</label>
+                    <label className="cyber-label">{translation.record.order}</label>
                     <OptionPicker
-                        data={orders}
+                        data={orders(translation)}
                         index={orderIndex}
-                        onChange={(index: number) => orders[index] && onChange("order", orders[index].value)}
-                    ></OptionPicker>
+                        onChange={(index: number) =>
+                            orders(translation)[index] && onChange("order", orders(translation)[index].value)
+                        }
+                    />
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <label className="text-cyan-400">Size:</label>
+                    <label className="cyber-label">{translation.record.size}</label>
                     <OptionPicker
                         data={sizes}
                         index={sizeIndex}
-                        onChange={(index: number) => orders[index] && onChange("size", sizes[index].value)}
+                        onChange={(index: number) => sizes[index] && onChange("size", sizes[index].value)}
                     />
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <label className="text-cyan-400">Category:</label>
+                    <label className="cyber-label">{translation.record.category}</label>
                     <CategoryPicker selectedId={categoryId} type={type} onSelect={ids => onChange("categoryId", ids)} />
                 </div>
 
-                <div className="flex justify-between items-center gap-3">
+                <div className="flex justify-between items-center gap-3 md:col-span-2">
                     <div className="flex items-center gap-3">
-                        <label className="text-cyan-400">Date Start:</label>
+                        <label className="cyber-label">{translation.record.dateStart}</label>
                         <DatePicker value={dateStart} onChange={v => onChange("dateStart", v)} maxDate={dateEnd} />
                     </div>
-                    <span className="text-cyan-400">-</span>
+                    <span className="cyber-label">-</span>
                     <div className="flex items-center gap-3">
-                        <label className="text-cyan-400">Date End:</label>
-                        <DatePicker value={dateEnd} onChange={v => onChange("dateEnd", v)} minDate={dateStart} />
+                        <label className="cyber-label">{translation.record.dateEnd}</label>
+                        <DatePicker
+                            value={dateEnd}
+                            onChange={v => onChange("dateEnd", v)}
+                            minDate={dateStart}
+                            isRight
+                        />
                     </div>
                 </div>
 
-                <div className="flex justify-between items-center gap-3">
+                <div className="flex justify-between items-center gap-3 md:col-span-2">
                     <div className="flex items-center gap-3">
-                        <label className="text-cyan-400">Price Low:</label>
+                        <label className="cyber-label">{translation.record.priceLow}</label>
                         <PricePicker
                             value={priceLow}
                             onChange={v => onChange("priceLow", v || 0)}
                             maxPrice={priceHigh}
                         />
                     </div>
-                    <span className="text-cyan-400">-</span>
+                    <span className="cyber-label">-</span>
                     <div className="flex items-center gap-3">
-                        <label className="text-cyan-400">Price Low:</label>
-                        <PricePicker value={priceHigh} onChange={v => onChange("priceHigh", v)} minPrice={priceLow} />
+                        <label className="cyber-label">{translation.record.priceHigh}</label>
+                        <PricePicker
+                            value={priceHigh}
+                            onChange={v => onChange("priceHigh", v)}
+                            minPrice={priceLow}
+                            isRight
+                        />
                     </div>
                 </div>
             </div>
@@ -227,6 +251,7 @@ export function Filter({filter, onChange}: FilterProps) {
 }
 
 export function Create({onAddRecord}: CreateProps) {
+    const {translation} = useI18n();
     const [record, setRecord] = useState<RecordData>({
         id: null,
         name: "",
@@ -239,45 +264,47 @@ export function Create({onAddRecord}: CreateProps) {
         created_at: null,
         updated_at: null
     });
+    const typeIndex = recordTypes(translation).findIndex(t => t.value === record.type);
 
     return (
-        <div className="space-y-3">
-            <div className="flex justify-between gap-3">
-                <div className="w-full">
-                    <label className="text-cyan-300">Name</label>
+        <div className="space-y-5 bg-(--bg-surface) p-3 rounded-xl border border-(--border)">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+                <div className="flex-1 w-full">
+                    <label className="cyber-label">{translation.record.name}</label>
                     <input
-                        className="mt-1 w-full rounded-lg bg-black/40 border border-cyan-400/20 p-1 text-cyan-100 placeholder:text-cyan-400"
+                        className="cyber-input w-full"
                         value={record.name}
+                        placeholder={translation.record.name}
                         onChange={e => setRecord({...record, name: e.target.value})}
-                        placeholder="Name"
                     />
                 </div>
-                <div className="w-full">
-                    <label className="text-cyan-300">Type</label>
-                    <select
-                        className="mt-1 w-full rounded-lg bg-black/40 border border-cyan-400/20 p-1 text-cyan-100"
-                        value={record.type}
-                        onChange={e => setRecord({...record, type: e.target.value as "income" | "expense"})}
-                    >
-                        <option value="income">Income</option>
-                        <option value="expense">Expense</option>
-                    </select>
+
+                <div className="w-full md:w-40">
+                    <label className="cyber-label">{translation.record.type}</label>
+                    <OptionPicker
+                        data={recordTypes(translation)}
+                        index={typeIndex}
+                        onChange={(index: number) =>
+                            setRecord(previous => ({...previous, type: recordTypes(translation)[index].value}))
+                        }
+                    />
                 </div>
             </div>
-            <div className="flex justify-center pt-1">
+
+            <div className="flex flex-col md:flex-row items-center justify-center pt-1">
                 <div className="w-full">
-                    <label className="text-cyan-300">Date</label>
+                    <label className="cyber-label">{translation.record.date}</label>
                     <DatePicker value={record.date} onChange={(date: string) => setRecord({...record, date: date})} />
                 </div>
                 <div className="w-full">
-                    <label className="text-cyan-300">Price</label>
+                    <label className="cyber-label">{translation.record.price}</label>
                     <PricePicker
                         value={record.price}
                         onChange={(price: number | null) => price && setRecord({...record, price: price})}
                     />
                 </div>
                 <div className="w-full">
-                    <label className="text-cyan-300">Category</label>
+                    <label className="cyber-label">{translation.record.category}</label>
                     <CategoryPicker
                         selectedId={record.category_id}
                         type={record.type}
@@ -287,25 +314,25 @@ export function Create({onAddRecord}: CreateProps) {
                 </div>
             </div>
             <div className="space-y-3">
-                <label className="text-cyan-300">Icon</label>
+                <label className="cyber-label">{translation.record.icon}</label>
                 <IconPicker icon={record.icon} name={record.name} onChange={v => setRecord({...record, icon: v})} />
             </div>
             <div>
-                <label className="text-cyan-300">Description</label>
+                <label className="cyber-label">{translation.record.description}</label>
                 <textarea
-                    className="w-full rounded-lg bg-black/40 border border-cyan-400/20 p-1 text-cyan-100 placeholder:text-cyan-400"
+                    className="w-full rounded-lg bg-(--bg-surface) border border-(--border) p-1 text-(--text-primary) placeholder:text-(--text-muted)"
                     value={record.description}
+                    placeholder={translation.record.description}
                     onChange={e => setRecord({...record, description: e.target.value})}
-                    placeholder="description"
                 />
             </div>
             <div className="flex justify-end pt-3">
                 <button
                     onClick={() => onAddRecord(record)}
-                    disabled={!record.name || !record.category_id}
-                    className="rounded-lg bg-cyan-500/20 px-4 py-2 text-cyan-300 hover:shadow-[0_0_15px_rgba(34,211,238,0.6)] hover:cursor-pointer disabled:opacity-10 disabled:cursor-not-allowed"
+                    disabled={!record.name || !record.category_id || !record.price}
+                    className="cyber-btn"
                 >
-                    Add
+                    {translation.record.create}
                 </button>
             </div>
         </div>
@@ -313,49 +340,51 @@ export function Create({onAddRecord}: CreateProps) {
 }
 
 export function Update({record, onUpdateRecord}: UpdateProps) {
+    const {translation} = useI18n();
     const [form, setForm] = useState<RecordData>(record);
     useEffect(() => setForm(record), [record]);
 
+    const typeIndex = recordTypes(translation).findIndex(t => t.value === form.type);
+
     return (
-        <div className="space-y-3">
-            <div className="flex justify-between gap-3">
-                <div className="w-full">
-                    <label className="text-cyan-300">Name</label>
+        <div className="space-y-5 bg-(--bg-surface) p-3 rounded-xl border border-(--border)">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+                <div className="flex-1 w-full">
+                    <label className="cyber-label">{translation.record.name}</label>
                     <input
-                        className="mt-1 w-full rounded-lg bg-black/40 border border-cyan-400/20 p-1 text-cyan-100 placeholder:text-cyan-400"
+                        className="cyber-input w-full"
                         value={form.name}
                         onChange={e => setForm({...form, name: e.target.value})}
                         placeholder="Name"
                     />
                 </div>
 
-                <div className="w-full">
-                    <label className="text-cyan-300">Type</label>
-                    <select
-                        className="mt-1 w-full rounded-lg bg-black/40 border border-cyan-400/20 p-1 text-cyan-100"
-                        value={form.type}
-                        onChange={e => setForm({...form, type: e.target.value as "income" | "expense"})}
-                    >
-                        <option value="income">Income</option>
-                        <option value="expense">Expense</option>
-                    </select>
+                <div className="w-full md:w-40">
+                    <label className="cyber-label">{translation.record.type}</label>
+                    <OptionPicker
+                        data={recordTypes(translation)}
+                        index={typeIndex}
+                        onChange={(index: number) =>
+                            setForm(previous => ({...previous, type: recordTypes(translation)[index].value}))
+                        }
+                    />
                 </div>
             </div>
 
-            <div className="flex justify-center pt-1">
+            <div className="flex flex-col md:flex-row justify-center pt-1">
                 <div className="w-full">
-                    <label className="text-cyan-300">Date</label>
+                    <label className="cyber-label">{translation.record.date}</label>
                     <DatePicker value={form.date} onChange={(date: string) => setForm({...form, date: date})} />
                 </div>
                 <div className="w-full">
-                    <label className="text-cyan-300">Price</label>
+                    <label className="cyber-label">{translation.record.price}</label>
                     <PricePicker
                         value={form.price}
                         onChange={(price: number | null) => price && setForm({...form, price: price})}
                     />
                 </div>
                 <div className="w-full">
-                    <label className="text-cyan-300">Category</label>
+                    <label className="cyber-label">{translation.record.category}</label>
                     <CategoryPicker
                         selectedId={form.category_id}
                         type={form.type}
@@ -366,14 +395,14 @@ export function Update({record, onUpdateRecord}: UpdateProps) {
             </div>
 
             <div className="space-y-3">
-                <label className="text-cyan-300">Icon</label>
+                <label className="cyber-label">{translation.record.icon}</label>
                 <IconPicker icon={form.icon} name={form.name} onChange={v => setForm({...form, icon: v})} />
             </div>
 
             <div>
-                <label className="text-cyan-300">Description</label>
+                <label className="cyber-label">{translation.record.description}</label>
                 <textarea
-                    className="w-full rounded-lg bg-black/40 border border-cyan-400/20 p-1 text-cyan-100 placeholder:text-cyan-400"
+                    className="w-full rounded-lg bg-(--bg-surface) border border-(--border) p-1 text-(--text-primary) placeholder:text-(--text-muted)"
                     value={form.description}
                     onChange={e => setForm({...form, description: e.target.value})}
                     placeholder="description"
@@ -384,73 +413,74 @@ export function Update({record, onUpdateRecord}: UpdateProps) {
                 <button
                     onClick={() => onUpdateRecord(form)}
                     disabled={!form.name || !form.category_id}
-                    className="rounded-lg px-4 py-2 bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 hover:shadow-[0_0_15px_rgba(34,211,238,0.6)] hover:cursor-pointer disabled:opacity-10 disabled:cursor-not-allowed"
+                    className="cyber-btn"
                 >
-                    Update
+                    {translation.record.update}
                 </button>
             </div>
         </div>
     );
 }
 export function Delete({record, onConfirm, onCancel}: DeleteProps) {
+    const {translation} = useI18n();
     const [category, setCategory] = useState<CategoryData | null>(null);
+    const {formatPrice} = useSettings();
 
     useEffect(() => {
         if (!record.category_id) return;
-        axiosConfig
-            .get(API_ENDPOINTS.FETCH_CATEGORY.replace("{id}", String(record.category_id)))
-            .then(response => setCategory(response.data))
-            .catch((error: any) => toast.error(error?.response?.data?.message || "Fetch category failed"));
+        const fetchRecords = async () =>
+            await categoryApi.fetch(record.category_id, setCategory, translation.category.fetchFailed);
+        fetchRecords();
     }, [record.category_id]);
 
     return (
-        <div className="space-y-5">
-            <div className="flex items-center gap-3 rounded-lg border border-red-400/30 bg-red-500/10 p-4">
-                <Trash className="text-red-400" size={22} />
-                <p className="text-sm text-red-300">
-                    Are you sure to delete {record.name}
-                    <span className="block text-red-400 font-semibold">This operation cannot undo</span>
+        <div className="space-y-5 bg-(--bg-surface) p-3 rounded-xl border border-(--border)">
+            <div className="flex items-center gap-3 rounded-lg border border-(--border) bg-(--bg-hover) p-3">
+                <Trash className="text-(--text-wrong)" size={23} />
+                <p className="font-bold text-(--text-wrong)">
+                    {translation.record.deleteConfirm} {record.name}
+                    <span className="block text-(--text-wrong) font-mono font-semibold">
+                        {translation.record.cannotUndo}
+                    </span>
                 </p>
             </div>
 
-            <div className="flex items-center gap-3 group rounded-lg border border-cyan-400/20 bg-black/40 p-3 transtion duration-300 hover:bg-cyan-400/5 hover:cursor-pointer">
-                <RenderIcon icon={record.icon} name={record.name} className="group-hover:animate-bounce" />
+            <div className="flex items-center gap-3 group rounded-lg border border-(--border) bg-(--bg-surface) p-3 cursor-pointer transtion duration-300 hover:bg-(--bg-hover) active:bg-(--bg-hover)">
+                <RenderIcon
+                    icon={record.icon}
+                    name={record.name}
+                    className="group-hover:animate-bounce group-active:animate-bounce"
+                />
                 <div
-                    className={`flex flex-col items-center gap-1 ${record.type === "income" ? "text-green-400" : "text-red-400"}`}
+                    className={`flex flex-col items-center gap-1 ${record.type === "income" ? "text-(--text-correct)" : "text-(--text-wrong)"}`}
                 >
                     <div className="flex items-center gap-3">
-                        <p className="font-medium truncate transition duration-300 group-hover:text-cyan-400">
+                        <p className="font-medium truncate transition duration-300 group-hover:text-(--text-accent) group-active:text-(--text-accent)">
                             {record.name}
                         </p>
-                        <p className="text-cyan-400">•</p>
-                        <p className="text-sm font-semiold truncate transition duration-300 group-hover:text-cyan-400">
+                        <p className="text-(--text-primary)">•</p>
+                        <p className="text-sm font-semiold truncate transition duration-300 group-hover:text-(--text-primary)">
                             {record.date}
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
                         <p className="font-bold uppercase tracking-tighter">{category?.name || "Loading..."}</p>
-                        <p className="text-cyan-400">•</p>
-                        <p className="font-mono font-bold transition duration-300 group-hover:text-cyan-400">
+                        <p className="text-(--text-primary)">•</p>
+                        <p className="font-mono font-bold transition duration-300 group-hover:text-(--text-accent) group-active:text-(--text-accent)">
                             {record.type === "income" ? "+" : "-"}
-                            {priceFormat(record.price)}
+                            {formatPrice(record.price)}
                         </p>
                     </div>
                 </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-4">
-                <button
-                    onClick={onCancel}
-                    className="rounded-lg px-4 py-2 border border-white/10 text-cyan-300 hover:bg-white/5 hover:cursor-pointer"
-                >
-                    Cancel
+                <button onClick={onCancel} className="cyber-btn-ghost">
+                    {translation.common.cancel}
                 </button>
 
-                <button
-                    onClick={() => onConfirm(record.id!)}
-                    className="rounded-lg px-4 py-2 bg-red-500/20 border border-red-400/40 text-red-300 hover:shadow-[0_0_15px_rgba(248,113,113,0.6)] hover:cursor-pointer"
-                >
-                    Delete
+                <button onClick={() => onConfirm(record.id!)} className="cyber-btn">
+                    {translation.record.delete}
                 </button>
             </div>
         </div>
@@ -458,55 +488,43 @@ export function Delete({record, onConfirm, onCancel}: DeleteProps) {
 }
 
 export function Import({onClose}: ImportProps) {
+    const {translation} = useI18n();
     const [fileType, setFileType] = useState<FileType>("csv");
     const [file, setFile] = useState<File | null>(null);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState<boolean>(false);
     const [result, setResult] = useState<ImportResponse | null>(null);
-    const [showErrors, setShowErrors] = useState(false);
+    const [showErrors, setShowErrors] = useState<boolean>(false);
+
+    const fileTypeIndex = fileTypes.findIndex(ft => ft.value === fileType);
 
     const handleImport = async () => {
         if (!file) {
-            toast.error("Please choose a file");
+            toast.error(translation.record.chooseFile);
             return;
         }
         const formData = new FormData();
         formData.append("file", file);
         setLoading(true);
-        try {
-            const response = await axiosConfig.post<ImportResponse>(API_ENDPOINTS.IMPORT_RECORDS, formData, {
-                headers: {"Content-Type": "multipart/form-data"}
-            });
-            setResult(response.data);
-            if (response.data.failed > 0) setShowErrors(true);
-            else {
-                toast.success(`Import ${response.data.success} records`);
-                onClose();
-            }
-        } catch (e: any) {
-            toast.error(e?.response?.data?.message || "Import failed");
-        } finally {
-            setLoading(false);
-        }
+        await recordApi.import(formData, setResult, setShowErrors, onClose, {
+            success: "Import $ records",
+            failed: "Import failed"
+        });
+        setLoading(false);
     };
 
     return (
-        <div className="space-y-5">
+        <div className="space-y-5 bg-(--bg-surface) p-3 rounded-xl border border-(--border)">
             <div>
-                <label className="text-cyan-300 text-sm">File type</label>
-                <select
-                    value={fileType}
-                    onChange={e => setFileType(e.target.value as FileType)}
-                    className="mt-1 w-full rounded-lg bg-black/40 border border-cyan-400/30 p-3 text-cyan-300"
-                >
-                    <option value="csv">CSV</option>
-                    <option value="tsv">TSV</option>
-                    <option value="xlsx">Excel</option>
-                    <option value="json">JSON</option>
-                </select>
+                <label className="cyber-label">{translation.record.fileType}</label>
+                <OptionPicker
+                    data={fileTypes}
+                    index={fileTypeIndex}
+                    onChange={(index: number) => setFileType(fileTypes[index].value)}
+                />
             </div>
             <div>
-                <p className="text-xs text-cyan-400 mb-1">Example format</p>
-                <pre className="rounded-lg bg-black/60 p-3 text-xs text-cyan-300 border border-emerald-400/20 overflow-auto max-h-40">
+                <p className="cyber-label">{translation.record.exampleFormat}</p>
+                <pre className="rounded-lg bg-(--bg-surface) p-3 text-xs text-(--text-primary) border border-(--border) overflow-auto max-h-40">
                     {EXAMPLES[fileType]}
                 </pre>
             </div>
@@ -519,18 +537,11 @@ export function Import({onClose}: ImportProps) {
                 }}
             />
             <div className="flex justify-end gap-3">
-                <button
-                    onClick={onClose}
-                    className="p-3 rounded-lg border border-white/10 text-cyan-300 hover:cursor-pointer"
-                >
-                    Cancel
+                <button onClick={onClose} className="cyber-btn-ghost">
+                    {translation.common.cancel}
                 </button>
-                <button
-                    onClick={handleImport}
-                    disabled={loading}
-                    className="p-3 rounded-lg bg-cyan-500/10 border border-cyan-400/30 text-cyan-300 hover:shadow-[0_0_15px_rgba(34,211,238,0.18)] hover:cursor-pointer"
-                >
-                    {loading ? "Importing..." : "Import"}
+                <button onClick={handleImport} disabled={loading} className="cyber-btn">
+                    {loading ? translation.common.importing : translation.common.import}
                 </button>
             </div>
             {result && (

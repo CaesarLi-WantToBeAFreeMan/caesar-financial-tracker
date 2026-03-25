@@ -1,31 +1,51 @@
-import type {ReactNode} from "react";
-import {useContext, useMemo} from "react";
-import {UserContext} from "../context/UserContext";
+/*
+ * left navigation sidebar
+ * sticky on desktop/laptop, drawer on mobile/tablet
+ */
+import {type ReactNode, useMemo} from "react";
+import {useUser} from "../context/UserContext";
 import {useI18n} from "../context/I18nContext";
 import {useNavigate} from "react-router-dom";
-import {User, Tag, Banknote, ChartNoAxesCombined, UserCog} from "lucide-react";
+import {User, Tag, Banknote, ChartNoAxesCombined, UserCog, Settings} from "lucide-react";
 
 interface Props {
     setIsOpenSideMenu?: React.Dispatch<React.SetStateAction<boolean>>;
     activeRoute: string;
-    isMobile?: boolean;
+    collaped?: boolean;
 }
 
-export default function Sidebar({setIsOpenSideMenu, activeRoute, isMobile}: Props) {
-    const context = useContext(UserContext);
+export default function Sidebar({setIsOpenSideMenu, activeRoute, collaped: collapsed}: Props) {
+    const {user} = useUser();
     const {translation} = useI18n();
     const navigate = useNavigate();
 
-    if (!context) return null;
-    const {user} = context;
-
     const menuData = useMemo(
         (): {label: string; icon: ReactNode; path: string}[] => [
-            {label: translation.nav.profile, icon: <UserCog size={20} />, path: "/profile"},
-            {label: translation.nav.category, icon: <Tag size={20} />, path: "/category"},
-            {label: translation.nav.record, icon: <Banknote size={20} />, path: "/record"},
-            {label: translation.nav.summary, icon: <ChartNoAxesCombined size={20} />, path: "/summary"}
-            // {label: translation.nav.settings, icon: <Settings size={20} />, path: "/settings"}
+            {
+                label: translation.navigation.profile,
+                icon: <UserCog size={20} className="text-(--text-accent)" />,
+                path: "/profile"
+            },
+            {
+                label: translation.navigation.category,
+                icon: <Tag size={20} className="text-(--text-accent)" />,
+                path: "/category"
+            },
+            {
+                label: translation.navigation.record,
+                icon: <Banknote size={20} className="text-(--text-accent)" />,
+                path: "/record"
+            },
+            {
+                label: translation.navigation.summary,
+                icon: <ChartNoAxesCombined size={20} className="text-(--text-accent)" />,
+                path: "/summary"
+            },
+            {
+                label: translation.navigation.settings,
+                icon: <Settings size={20} className="text-(--text-accent)" />,
+                path: "/settings"
+            }
         ],
         [translation]
     );
@@ -35,71 +55,63 @@ export default function Sidebar({setIsOpenSideMenu, activeRoute, isMobile}: Prop
         navigate(path);
     };
 
-    const baseClass = isMobile
-        ? "fixed inset-y-0 left-0 w-72 h-screen flex flex-col z-50"
-        : "hidden lg:flex flex-col w-64 sticky top-[68px] h-[calc(100vh-68px)]";
-
     return (
         <aside
-            className={`${baseClass} p-3 overflow-hidden`}
-            style={{background: "var(--bg-surface)", borderRight: "1px solid var(--border)"}}
+            className={`flex flex-col w-full h-full p-3 overflow-y-auto ${collapsed ? "w-16 items-center" : "w-72 min-w-72"}`}
         >
             {/*avatar*/}
-            {user && (
-                <div
-                    className="flex flex-col items-center p-4 rounded-2xl mb-4 shrink-0"
-                    style={{background: "var(--bg-card)", border: "1px solid var(--border)"}}
-                >
-                    <div
-                        className="w-16 h-16 rounded-full flex items-center justify-center mb-3 overflow-hidden"
-                        style={{border: "2px solid var(--border-glow)"}}
-                    >
+            {user && !collapsed && (
+                <div className="flex flex-col items-center p-4 rounded-2xl mb-4 shrink-0 bg-(--bg-card) border-(--border)">
+                    <div className="w-15 h-15 rounded-full flex items-center justify-center mb-3 overflow-hidden border-2 border-(--border-glow)">
                         {user.profileImage ? (
                             <img src={user.profileImage} alt="avatar" className="w-full h-full object-cover" />
                         ) : (
-                            <User size={28} style={{color: "var(--text-accent)"}} />
+                            <User size={28} className="text-(--text-accent)" />
                         )}
                     </div>
-                    <p className="font-bold text-base truncate px-1 text-center" style={{color: "var(--text-accent)"}}>
+                    <p className="font-bold text-base truncate px-1 text-center text-(--text-accent)">
                         {user.firstName} {user.lastName}
                     </p>
-                    <p className="text-xs truncate font-mono mt-0.5" style={{color: "var(--text-muted)"}}>
-                        {user.email}
-                    </p>
+                    <p className="text-xs truncate font-mono mt-1 text-(--text-muted)">{user.email}</p>
+                </div>
+            )}
+
+            {/*avatar icon only*/}
+            {user && collapsed && (
+                <div className="mb-4 shrink-0">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden border-2 border-(--border-glow)">
+                        {user.profileImage ? (
+                            <img src={user.profileImage} alt="avatar" className="w-full h-full object-cover" />
+                        ) : (
+                            <User size={20} className="text-(--text-accent)" />
+                        )}
+                    </div>
                 </div>
             )}
 
             {/*navigator*/}
-            <nav className="sidebar-nav">
+            <nav className="sidebar-navigator">
                 {menuData.map(item => {
                     const isActive = activeRoute === item.label;
                     return (
                         <button
                             key={item.path}
-                            className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl transition-all duration-200 cursor-pointer group"
-                            style={{
-                                background: isActive ? "var(--bg-hover)" : "transparent",
-                                border: `1px solid ${isActive ? "var(--border-glow)" : "transparent"}`,
-                                boxShadow: isActive ? "var(--glow-cyan)" : "none",
-                                color: isActive ? "var(--text-accent)" : "var(--text-dim)"
-                            }}
-                            onMouseEnter={e => {
-                                if (!isActive) e.currentTarget.style.background = "var(--bg-hover)";
-                            }}
-                            onMouseLeave={e => {
-                                if (!isActive) e.currentTarget.style.background = "transparent";
-                            }}
+                            title={item.label}
+                            className={`
+                                w-full flex items-center gap-3 p-3 rounded-xl transition duration-300 cursor-pointer group 
+                                ${collapsed ? "justify-center" : ""}
+                                ${isActive ? "bg-(--bg-hover) border-(--border-glow) text-(--text-accent)" : "hover:bg-(--bg-hover) text-(--text-dim)"}
+                            `}
                             onClick={() => handleNavigator(item.path)}
                         >
-                            <span style={{color: isActive ? "var(--text-accent)" : "var(--text-muted)"}}>
-                                {item.icon}
-                            </span>
-                            <span className="text-sm font-medium tracking-wide truncate">{item.label}</span>
-                            {isActive && (
-                                <span
-                                    className="ml-auto w-1.5 h-1.5 rounded-full shrink-0"
-                                    style={{background: "var(--text-accent)", boxShadow: "0 0 8px var(--text-accent)"}}
-                                />
+                            {item.icon}
+                            {!collapsed && (
+                                <>
+                                    <span className="font-medium tracking-wide truncate">{item.label}</span>
+                                    {isActive && (
+                                        <span className="ml-auto w-2 h-2 rounded-full shrink-0 bg-(--text-accent)" />
+                                    )}
+                                </>
                             )}
                         </button>
                     );

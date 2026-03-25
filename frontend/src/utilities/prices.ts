@@ -1,41 +1,75 @@
-export type CurrencyCode = "usd" | "twd" | "cny";
+//ISO-4217 codes for supported currency
+export type CurrencyCode = "USD" | "CAD" | "GBP" | "EUR" | "TWD" | "JPY" | "CNY";
 
-export const isValidPriceRange = (priceLow: number, priceHigh: number | null) =>
-    priceLow >= 0 && (priceHigh === null || (priceHigh >= 0 && priceLow <= priceHigh));
+//currency display options
+export const CURRENCY_DISPLAY_OPTIONS: Record<CurrencyCode, string[]> = {
+    USD: ["$", "US$", "USD"],
+    CAD: ["$", "CA$", "CAD"],
+    GBP: ["£", "GB£", "GBP"],
+    EUR: ["€", "EU€", "EUR"],
+    TWD: ["$", "NT$", "TWD"],
+    JPY: ["¥", "JP¥", "JPY"],
+    CNY: ["¥", "CN¥", "CNY"]
+};
 
-export function priceFormat(
-    price: number | null,
-    currency: CurrencyCode = "usd",
-    place: number = 2,
-    decimalPoint: string = ".",
-    thousandsSeparator: string = ",",
-    thousandthsSeparator: string = " ",
-    separatorNumber: number = 3
-): string {
-    if (price == null) return "∞";
-    let symbol = "$";
-    switch (currency) {
-        case "twd":
-            separatorNumber = separatorNumber ?? 4;
-            place = 0;
-            symbol = "$";
-            break;
-        case "cny":
-            separatorNumber = separatorNumber ?? 4;
-            symbol = "¥";
-            break;
-    }
-    let [integer, fractional] = Math.abs(price).toFixed(place).split(".");
-    integer = integer.replace(new RegExp(`\\d(?=(\\d{${separatorNumber}})+$)`, "g"), `$&${thousandsSeparator}`);
-    fractional = fractional.replace(new RegExp(`(\\d{${separatorNumber}})`, "g"), `$1${thousandthsSeparator}`).trim();
-    return `${symbol}${price < 0 ? "-" : ""}${integer}${place > 0 ? `${decimalPoint}${fractional}` : ""}`;
+//all currency code orders
+export const CURRENCY_CODES: CurrencyCode[] = ["USD", "CAD", "GBP", "EUR", "TWD", "JPY", "CNY"];
+
+//national flag emojis for currency codes
+export const CURRENCY_FLAGS: Record<CurrencyCode, String> = {
+    USD: "us",
+    CAD: "ca",
+    GBP: "gb",
+    EUR: "eu",
+    TWD: "tw",
+    JPY: "jp",
+    CNY: "cn"
+};
+
+//price format options
+export interface PriceFormatOptions {
+    /*currency symbol that is displayed before price*/
+    currencySymbol: string;
+    /*number of group*/
+    /*0: no grouping; 3: western style; 4: cjk style*/
+    separatorPlaces: 0 | 1 | 2 | 3 | 4 | 5;
+    /*character that is displayed between integers*/
+    /*default is comma (,)*/
+    thousandsSeparator: string;
+    /*number of displayed decimal digits*/
+    /*0 for new taiwan dollar, 2 for otherwise*/
+    decimalPlaces: 0 | 1 | 2;
+    /*decimal point character, default is "."*/
+    decimalSeparator?: string;
 }
 
-export function parsePrice(price: string, decimalPoint: string = "."): number | null {
-    if (price === "∞") return null;
-    return parseFloat(
-        price
-            .replace(new RegExp(`[^0-9\\-${decimalPoint.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}]`, "g"), "")
-            .replace(decimalPoint, ".")
-    );
+//convert a numeric price into a localized display price
+export function formatPrice(price: number | null, options: PriceFormatOptions): string {
+    if (price == null) return "∞";
+
+    const {currencySymbol, separatorPlaces, thousandsSeparator, decimalPlaces, decimalSeparator} = options;
+    const decimalChar = decimalSeparator ?? ".";
+
+    //split the price
+    let [integer, fractional] = Math.abs(price).toFixed(decimalPlaces).split(".");
+
+    //insert thousandths separator if enabled
+    if (separatorPlaces > 0)
+        integer = integer.replace(new RegExp(`\\d(?=(\\d{${separatorPlaces}})+$)`, "g"), `$&${thousandsSeparator}`);
+
+    const sign = price < 0 ? "-" : "";
+    if (fractional === undefined) return `${currencySymbol}${sign}${integer}`;
+    return `${currencySymbol}${sign}${integer}${decimalChar}${fractional}`;
+}
+
+//parse a formatted price string back to a number
+export function parsePrice(formatted: string): number | null {
+    if (formatted === "∞") return null;
+    const price = parseFloat(formatted.replace(/[^0-9.\-]/g, ""));
+    return isNaN(price) ? null : price;
+}
+
+//validate the price range is logically consistent
+export function isValidPriceRange(priceLow: number, priceHigh: number | null): boolean {
+    return priceLow >= 0 && (priceHigh === null || (priceHigh >= 0 && priceLow <= priceHigh));
 }

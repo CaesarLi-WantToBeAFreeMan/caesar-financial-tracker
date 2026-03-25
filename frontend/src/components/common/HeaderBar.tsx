@@ -1,97 +1,103 @@
+/*
+ * common header for category and record pages
+ */
+import {useState, useRef} from "react";
 import {Download, LoaderCircle, Plus, Upload} from "lucide-react";
-import {useEffect, useRef, useState} from "react";
 import axiosConfig from "../../utilities/AxiosUtility";
 import {API_ENDPOINTS} from "../../utilities/apiEndpoint";
+import {storage} from "../../utilities/storage";
+import {useClickOutside} from "../../hooks/useClickOutside";
+import {useI18n} from "../../context/I18nContext";
 import toast from "react-hot-toast";
 import type {ExportTypes} from "../../types/commonTypes";
 
 interface Props {
     title: string;
-    setOpenImportModal: (value: boolean) => void;
-    setOpenCreateModal: (value: boolean) => void;
+    setOpenImportModal: (v: boolean) => void;
+    setOpenCreateModal: (v: boolean) => void;
 }
 
+const cyberpunkButtonStyles =
+    "flex justify-between items-center gap-3 p-3 cyber-btn-ghost hover:scale-120 active:scale-120";
+
 export default function HeaderBar({title, setOpenImportModal, setOpenCreateModal}: Props) {
-    const [openExportMenu, setOpenExportMenu] = useState(false);
-    const [exporting, setExporting] = useState(false);
+    const {translation} = useI18n();
+    const [openExportMenu, setOpenExportMenu] = useState<boolean>(false);
+    const [exporting, setExporting] = useState<boolean>(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    //api
-    const handleExport = async (type: "csv" | "tsv" | "xlsx" | "json") => {
+    useClickOutside(dropdownRef, () => setOpenExportMenu(false), openExportMenu);
+
+    //export handler function
+    const handleExport = async (type: ExportTypes) => {
         setExporting(true);
         setOpenExportMenu(false);
-        const apiUrl = title === "All Categories" ? API_ENDPOINTS.EXPORT_CATEGORIES : API_ENDPOINTS.EXPORT_RECORDS;
+
+        const apiUrl = title.toLowerCase().includes("categor")
+            ? API_ENDPOINTS.EXPORT_CATEGORIES
+            : API_ENDPOINTS.EXPORT_RECORDS;
+
         try {
             const response = await axiosConfig.get(apiUrl.replace("{type}", type), {responseType: "blob"});
-            const blob = new Blob([response.data]);
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = `categories.${type}`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
-            toast.success(`Downloading ${type.toUpperCase()} file`);
+            storage.saveFile(window.URL.createObjectURL(new Blob([response.data])), "export", type);
+
+            toast.success(`${translation.common.export}: ${type.toUpperCase()}`);
         } catch (error: any) {
-            toast.error(error?.response?.data?.message || "Export failed");
+            toast.error(error?.response?.data?.message || translation.common.exportFailed);
         } finally {
             setExporting(false);
         }
     };
 
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) setOpenExportMenu(false);
-        };
-
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
+    const EXPORT_TYPES: {label: string; type: ExportTypes}[] = [
+        {label: "CSV", type: "csv"},
+        {label: "TSV", type: "tsv"},
+        {label: "Excel", type: "xlsx"},
+        {label: "JSON", type: "json"}
+    ];
 
     return (
-        <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-2xl font-semibold text-cyan-300">{title}</h2>
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            {/*title*/}
+            <h2 className="text-xl font-mono font-bold text-(--text-accent)">{title}</h2>
+
             <div className="flex items-center gap-3">
-                <button
-                    onClick={() => setOpenImportModal(true)}
-                    className="flex items-center justify-center gap-3 rounded-lg p-3 bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 hover:shadow-[0_0_15px_rgba(34,211,238,0.6)] hover:cursor-pointer"
-                >
-                    <Upload size={18} /> Import
+                {/*import button*/}
+                <button onClick={() => setOpenImportModal(true)} className={cyberpunkButtonStyles}>
+                    <Upload size={18} />
+                    <span className="hidden md:inline">{translation.common.import}</span>
                 </button>
-                <div className="relative inline-block" ref={dropdownRef}>
+
+                {/*export dropdown list*/}
+                <div className="relative" ref={dropdownRef}>
                     <button
-                        onClick={() => setOpenExportMenu(value => !value)}
+                        onClick={() => setOpenExportMenu(v => !v)}
                         disabled={exporting}
-                        className="inline-flex justify-center gap-3 w-full p-3 text-sm font-medium rounded-lg bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 hover:shadow-[0_0_15px_rgba(34,211,238,0.6)] hover:cursor-pointer"
+                        className={cyberpunkButtonStyles}
                     >
                         {exporting ? <LoaderCircle size={18} className="animate-spin" /> : <Download size={18} />}
-                        Export
+                        <span className="hidden md:inline">{translation.common.export}</span>
                     </button>
+
                     {openExportMenu && (
-                        <div className="absolute right-0 z-50 mt-3 w-39 origin-top-right rounded-lg border border-cyan-400/30 bg-slate-900 shadow-xl">
-                            {[
-                                {label: "Download CSV file", type: "csv"},
-                                {label: "Download TSV file", type: "tsv"},
-                                {label: "Download Excel file", type: "xlsx"},
-                                {label: "Download JSON file", type: "json"}
-                            ].map(item => (
+                        <div className="absolute left-1/2 -translate-x-1/2 z-50 mt-3 w-21 rounded-xl overflow-hidden shadow-xl bg-(--bg-base) border border-(--border)">
+                            {EXPORT_TYPES.map(({label, type}) => (
                                 <button
-                                    key={item.type}
-                                    onClick={() => handleExport(item.type as ExportTypes)}
-                                    className="w-full text-left p-3 text-sm text-cyan-200 hover:bg-cyan-500/10 hover:cursor-pointer"
+                                    key={type}
+                                    onClick={() => handleExport(type)}
+                                    className="w-full text-center px-3 py-2 transition duration-300 cursor-pointer text-(--text-dim) hover:bg-(--bg-hover) hover:text-(--text-accent) hover:scale-120 active:bg-(--bg-hover) active:text-(--text-accent) active:scale-120"
                                 >
-                                    {item.label}
+                                    {label}
                                 </button>
                             ))}
                         </div>
                     )}
                 </div>
-                <button
-                    onClick={() => setOpenCreateModal(true)}
-                    className="flex items-center justify-center gap-3 rounded-lg p-3 bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 hover:shadow-[0_0_15px_rgba(34,211,238,0.6)] hover:cursor-pointer"
-                >
-                    <Plus size={18} /> Add
+
+                {/*add button*/}
+                <button onClick={() => setOpenCreateModal(true)} className={cyberpunkButtonStyles}>
+                    <Plus size={18} />
+                    <span className="hidden md:inline">{translation.common.create}</span>
                 </button>
             </div>
         </div>

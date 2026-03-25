@@ -7,7 +7,10 @@ export type TranslationType = {
         create: string;
         update: string;
         import: string;
+        importing: string;
+        uploadFile: string;
         export: string;
+        exportFailed: string;
         search: string;
         loading: string;
         confirm: string;
@@ -17,8 +20,19 @@ export type TranslationType = {
         expense: string;
         yes: string;
         no: string;
+        previous: string;
+        next: string;
+        allCategories: string;
+        noItems: string;
+        noItemsHint: string;
+        total: string;
+        adArea: string;
+        iconPlaceholder: string;
+        importError: string;
+        success: string;
+        failed: string;
     };
-    nav: {
+    navigation: {
         home: string;
         profile: string;
         category: string;
@@ -27,9 +41,9 @@ export type TranslationType = {
         settings: string;
         logout: string;
         appName: string;
-        appShort: string;
+        appAbbr: string;
     };
-    auth: {
+    authentication: {
         login: string;
         signup: string;
         loginTitle: string;
@@ -75,17 +89,31 @@ export type TranslationType = {
         export: string;
         name: string;
         type: string;
+        order: string;
+        orders: {
+            nameAsc: string;
+            nameDesc: string;
+            createdAsc: string;
+            createdDesc: string;
+            updatedAsc: string;
+            updatedDesc: string;
+        };
+        size: string;
         icon: string;
         searchPlaceholder: string;
         createSuccess: string;
         updateSuccess: string;
         deleteSuccess: string;
         deleteConfirm: string;
+        cannotUndo: string;
         fetchFailed: string;
         createFailed: string;
         updateFailed: string;
         deleteFailed: string;
         inUse: string;
+        chooseFile: string;
+        fileType: string;
+        exampleFormat: string;
     };
     record: {
         title: string;
@@ -96,8 +124,27 @@ export type TranslationType = {
         export: string;
         name: string;
         type: string;
+        order: string;
+        orders: {
+            nameAsc: string;
+            nameDesc: string;
+            dateAsc: string;
+            dateDesc: string;
+            priceAsc: string;
+            priceDesc: string;
+            createdAsc: string;
+            createdDesc: string;
+            updatedAsc: string;
+            updatedDesc: string;
+        };
+        size: string;
+        dateStart: string;
+        dateEnd: string;
+        priceLow: string;
+        priceHigh: string;
         date: string;
         price: string;
+        icon: string;
         description: string;
         category: string;
         searchPlaceholder: string;
@@ -105,10 +152,15 @@ export type TranslationType = {
         updateSuccess: string;
         deleteSuccess: string;
         deleteConfirm: string;
+        cannotUndo: string;
         fetchFailed: string;
         createFailed: string;
         updateFailed: string;
         deleteFailed: string;
+        filter: string;
+        chooseFile: string;
+        fileType: string;
+        exampleFormat: string;
     };
     summary: {
         title: string;
@@ -118,7 +170,9 @@ export type TranslationType = {
         noDataHint: string;
         type: string;
         chart: string;
+        charts: {area: string; bar: string; line: string; composed: string; pie: string; radar: string};
         order: string;
+        orders: {date: string; price: string; type: string; category: string};
         category: string;
         dateStart: string;
         dateEnd: string;
@@ -126,34 +180,37 @@ export type TranslationType = {
         priceHigh: string;
         recordCount: string;
         totalAmount: string;
+        filter: string;
     };
     settings: {
         title: string;
-        sections: {number: string; currency: string; date: string; display: string; ui: string; advanced: string};
-        thousandsSep: string;
-        thousandsSepHint: string;
-        thousandthsSep: string;
-        thousandthsSepHint: string;
-        separatorNum: string;
-        separatorNumHint: string;
-        currencySymbol: string;
+        sections: {currency: string; number: string; date: string; advanced: string};
+        //currency
+        currencyCode: string;
+        currencyCodeHint: string;
         currencyDisplay: string;
         currencyDisplayHint: string;
-        floatPlaces: string;
-        floatPlacesHint: string;
+        currencyNames: {USD: string; CAD: string; GBP: string; EUR: string; TWD: string; JPY: string; CNY: string};
+        //price
+        separatorPlaces: string;
+        separatorPlacesHint: string;
+        thousandsSeparator: string;
+        thousandsSeparatorHint: string;
+        thousandthsSeparator: string;
+        thousandthsSeparatorHint: string;
+        decimalSeparator: string;
+        decimalSeparatorHint: string;
+        decimalPlaces: string;
+        decimalPlacesHint: string;
+        pricePreview: string;
+        //date & time
         dateFormat: string;
         dateFormatHint: string;
         timezone: string;
         timezoneHint: string;
         currentTime: string;
-        uiStyle: string;
-        cyberpunk: string;
-        ondark: string;
-        classic: string;
-        fontSize: string;
-        fontSizes: {xs: string; sm: string; md: string; lg: string; xl: string};
-        adArea: string;
-        adAreaHint: string;
+        datePreview: string;
+        //actions
         saved: string;
         reset: string;
     };
@@ -164,12 +221,12 @@ export type TranslationType = {
         learnMore: string;
         featuresTitle: string;
         features: {
-            track: {title: string; desc: string};
-            charts: {title: string; desc: string};
-            import: {title: string; desc: string};
-            i18n: {title: string; desc: string};
-            theme: {title: string; desc: string};
-            secure: {title: string; desc: string};
+            track: {title: string; description: string};
+            charts: {title: string; description: string};
+            import: {title: string; description: string};
+            i18n: {title: string; description: string};
+            theme: {title: string; description: string};
+            secure: {title: string; description: string};
         };
         techTitle: string;
         footerNote: string;
@@ -177,4 +234,19 @@ export type TranslationType = {
     theme: {dark: string; light: string; toggle: string};
     language: {switch: string};
     errors: {networkError: string; serverError: string; serverWaking: string; timeout: string; unauthorized: string};
+    months: {
+        jan: string;
+        feb: string;
+        mar: string;
+        apr: string;
+        may: string;
+        jun: string;
+        jul: string;
+        aug: string;
+        sep: string;
+        oct: string;
+        nov: string;
+        dec: string;
+    };
+    dayOfWeeks: {mon: string; tue: string; wed: string; thu: string; fri: string; sat: string; sun: string};
 };

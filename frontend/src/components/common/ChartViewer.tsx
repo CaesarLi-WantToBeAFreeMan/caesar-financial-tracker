@@ -19,13 +19,12 @@ import {
     PolarAngleAxis
 } from "recharts";
 import {Box, LoaderCircle} from "lucide-react";
-import axiosConfig from "../../utilities/AxiosUtility";
-import {API_ENDPOINTS} from "../../utilities/apiEndpoint";
 import {useI18n} from "../../context/I18nContext";
 import {useSettings} from "../../context/SettingsContext";
 import type {RecordData} from "../../types/RecordTypes";
 import type {ChartMode, DivisionMode} from "../../types/SummaryTypes.ts";
 import type {CategoryData} from "../../types/CategoryTypes";
+import {categoryApi} from "../../utilities/api.ts";
 
 interface Props {
     data: RecordData[];
@@ -48,31 +47,34 @@ const CYBER_COLORS = [
 
 export default function ChartViewer({data, chartMode, divisionMode}: Props) {
     const [categories, setCategories] = useState<Record<number, CategoryData>>({});
-    const [loadingCats, setLoadingCats] = useState<boolean>(false);
+    const [loadingCategories, setLoadingCategories] = useState<boolean>(false);
 
     const {translation} = useI18n();
     const {formatPrice, formatDate} = useSettings();
 
     const fetchCategories = useCallback(async (ids: number[]) => {
         if (!ids.length) return;
-        setLoadingCats(true);
-        try {
-            const results = await Promise.all(
-                ids.map(id => axiosConfig.get(API_ENDPOINTS.FETCH_CATEGORY.replace("{id}", String(id))))
-            );
-            const map: Record<number, CategoryData> = {};
-            results.forEach(result => {
-                if (result.data?.id) map[result.data.id] = result.data;
-            });
-            setCategories(prev => ({...prev, ...map}));
-        } catch {
-        } finally {
-            setLoadingCats(false);
-        }
+        setLoadingCategories(true);
+        const map: Record<number, CategoryData> = {};
+
+        await Promise.all(
+            ids.map(id =>
+                categoryApi.fetch(
+                    id,
+                    category => {
+                        if (category?.id) map[category.id] = category;
+                    },
+                    translation.category.fetchFailed
+                )
+            )
+        );
+
+        setCategories(previous => ({...previous, ...map}));
+        setLoadingCategories(false);
     }, []);
 
     useEffect(() => {
-        const ids = Array.from(new Set(data.map(r => r.category_id).filter(Boolean))) as number[];
+        const ids = Array.from(new Set(data.map(record => record.category_id).filter(Boolean))) as number[];
         const missing = ids.filter(id => !categories[id]);
         if (missing.length) fetchCategories(missing);
     }, [data]);
@@ -128,22 +130,12 @@ export default function ChartViewer({data, chartMode, divisionMode}: Props) {
     const CustomTooltip = ({active, payload, label}: any) => {
         if (!active || !payload?.length) return null;
         return (
-            <div
-                style={{
-                    background: "var(--bg-surface)",
-                    border: "1px solid var(--border-glow)",
-                    borderRadius: "10px",
-                    padding: "10px 14px",
-                    backdropFilter: "blur(12px)",
-                    boxShadow: "var(--glow-cyan)",
-                    minWidth: "140px"
-                }}
-            >
-                <p className="text-xs font-bold mb-2 truncate" style={{color: "var(--text-accent)"}}>
+            <div className="rounded-xl bg-(--bg-surface) border border-(--border-glow) px-2 py-3 backdrop-blur-md shadow-(--glow-cyan) min-w-30">
+                <div className="font-bold mb-3 pb-1 truncate text-(--text-accent) border-b border-(--border)">
                     {label}
-                </p>
+                </div>
                 {payload.map((p: any) => (
-                    <div key={p.dataKey} className="flex items-center justify-between gap-4 text-xs">
+                    <div key={p.dataKey} className="flex items-center justify-between gap-3 text-sm">
                         <span style={{color: p.color}}>{p.name}</span>
                         <span className="font-mono font-bold" style={{color: p.color}}>
                             {p.dataKey === "count" ? p.value : formatPrice(p.value)}
@@ -170,23 +162,16 @@ export default function ChartViewer({data, chartMode, divisionMode}: Props) {
     };
 
     //empty
-    if (!loadingCats && !chartData.length)
+    if (!loadingCategories && !chartData.length)
         return (
-            <div
-                className="flex flex-col items-center justify-center py-16 rounded-xl"
-                style={{border: "2px dashed var(--border)", background: "var(--bg-card)"}}
-            >
-                <Box size={48} style={{color: "var(--border-glow)", marginBottom: "12px"}} />
-                <p className="font-medium" style={{color: "var(--text-accent)"}}>
-                    {translation.summary.noData}
-                </p>
-                <p className="text-xs mt-1" style={{color: "var(--text-muted)"}}>
-                    {translation.summary.noDataHint}
-                </p>
+            <div className="flex flex-col items-center justify-center py-12 rounded-xl border-2 border-dashed border-(--border) bg-(--bg-card)">
+                <Box size={50} className="text-(--text-accent) mb-3" />
+                <p className="text-(--text-accent) font-bold">{translation.summary.noData}</p>
+                <p className="mt-1 text-(--text-muted) opacity-50">{translation.summary.noDataHint}</p>
             </div>
         );
 
-    const axisStyle = {fontSize: 11, fontFamily: "monospace"};
+    const axisStyle = {fontSize: 12, fontFamily: "monospace"};
     const gridStroke = "var(--border)";
     const xColor = "var(--text-muted)";
     const yColor = "var(--text-muted)";
@@ -210,19 +195,16 @@ export default function ChartViewer({data, chartMode, divisionMode}: Props) {
                 tickFormatter={yFormatter}
                 width={70}
             />
-            <Tooltip content={<CustomTooltip />} cursor={{fill: "rgba(34,211,238,0.08)"}} />
+            <Tooltip content={<CustomTooltip />} cursor={{fill: "rgb(from var(--text-accent) r g b / 0.1)"}} />
             <Legend wrapperStyle={{fontSize: "12px", paddingTop: "8px"}} />
         </>
     );
 
     return (
-        <div
-            className="w-full cyber-card overflow-hidden"
-            style={{height: "clamp(300px, 50vh, 520px)", padding: "16px 8px 8px"}}
-        >
-            {loadingCats ? (
+        <div className="w-full cyber-card overflow-hidden h-[clamp(300px,50vh,520px)] pt-4 px-2 pb-2">
+            {loadingCategories ? (
                 <div className="flex h-full items-center justify-center">
-                    <LoaderCircle className="animate-spin" size={36} style={{color: "var(--text-accent)"}} />
+                    <LoaderCircle className="animate-spin text-(--text-accent)" size={39} />
                 </div>
             ) : (
                 <ResponsiveContainer width="100%" height="100%">
@@ -236,7 +218,7 @@ export default function ChartViewer({data, chartMode, divisionMode}: Props) {
                                 cx="50%"
                                 cy="45%"
                                 innerRadius="55%"
-                                outerRadius="80%"
+                                outerRadius="70%"
                                 paddingAngle={3}
                                 label={({name, percent}) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                                 labelLine={{stroke: "var(--border-glow)"}}
@@ -252,7 +234,7 @@ export default function ChartViewer({data, chartMode, divisionMode}: Props) {
                     chartMode === "radar" ? (
                         <RadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData}>
                             <PolarGrid stroke={gridStroke} />
-                            <PolarAngleAxis dataKey="name" tick={{fontSize: 11, fill: xColor}} />
+                            <PolarAngleAxis dataKey="name" tick={{fontSize: 12, fill: xColor}} />
                             {valueKeys.map(vk => (
                                 <Radar
                                     key={vk.key}
@@ -260,7 +242,7 @@ export default function ChartViewer({data, chartMode, divisionMode}: Props) {
                                     dataKey={vk.key}
                                     stroke={vk.color}
                                     fill={vk.color}
-                                    fillOpacity={0.25}
+                                    fillOpacity={0.3}
                                 />
                             ))}
                             <Tooltip content={<CustomTooltip />} />
@@ -271,7 +253,7 @@ export default function ChartViewer({data, chartMode, divisionMode}: Props) {
                         <ComposedChart data={chartData}>
                             <defs>
                                 {valueKeys.map(vk => (
-                                    <linearGradient key={vk.key} id={`grad-${vk.key}`} x1="0" y1="0" x2="0" y2="1">
+                                    <linearGradient key={vk.key} id={`grad-${vk.key}`} x1="0" y1="0" x2="1" y2="1">
                                         <stop offset="5%" stopColor={vk.color} stopOpacity={0.6} />
                                         <stop offset="95%" stopColor={vk.color} stopOpacity={0.05} />
                                     </linearGradient>

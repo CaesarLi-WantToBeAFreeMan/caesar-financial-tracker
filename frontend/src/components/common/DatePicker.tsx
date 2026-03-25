@@ -1,41 +1,81 @@
-import {ChevronLeft, ChevronRight, Calendar, XCircle, AlarmClock} from "lucide-react";
+/*
+ * calendar date picker
+ */
 import {useState, useRef, useEffect} from "react";
+import {ChevronLeft, ChevronRight, Calendar, XCircle, AlarmClock} from "lucide-react";
 import {fromISO, toISO, getDate} from "../../utilities/dates";
+import {useClickOutside} from "../../hooks/useClickOutside";
+import {useSettings} from "../../context/SettingsContext";
+import {useI18n} from "../../context/I18nContext";
 
 interface Props {
     value: string;
     onChange: (v: string) => void;
     minDate?: string;
     maxDate?: string;
+    isRight?: boolean;
 }
 
-export default function DatePicker({value, onChange, minDate, maxDate}: Props) {
+export default function DatePicker({value, onChange, minDate, maxDate, isRight}: Props) {
     const today = getDate();
+    const {formatDate} = useSettings();
+    const {translation} = useI18n();
+
     const containerRef = useRef<HTMLDivElement>(null);
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = useState<boolean>(false);
     const [view, setView] = useState<"days" | "months" | "years">("days");
 
-    const selectedDate = fromISO(value);
-    const [month, setMonth] = useState(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
+    const [month, setMonth] = useState(() => {
+        const date = fromISO(value);
+        return new Date(date.getFullYear(), date.getMonth(), 1);
+    });
+
+    const MONTH_NAMES = [
+        translation.months.jan,
+        translation.months.feb,
+        translation.months.mar,
+        translation.months.apr,
+        translation.months.may,
+        translation.months.jun,
+        translation.months.jul,
+        translation.months.aug,
+        translation.months.sep,
+        translation.months.oct,
+        translation.months.nov,
+        translation.months.dec
+    ];
+    const DAY_LABELS = [
+        translation.dayOfWeeks.sun,
+        translation.dayOfWeeks.mon,
+        translation.dayOfWeeks.tue,
+        translation.dayOfWeeks.wed,
+        translation.dayOfWeeks.thu,
+        translation.dayOfWeeks.fri,
+        translation.dayOfWeeks.sat
+    ];
 
     useEffect(() => {
-        const handler = (e: MouseEvent) => {
-            if (!containerRef.current?.contains(e.target as Node)) {
-                setOpen(false);
-                setView("days");
-            }
-        };
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
-    }, []);
+        const date = fromISO(value);
+        setMonth(new Date(date.getFullYear(), date.getMonth(), 1));
+    }, [value]);
 
+    useClickOutside(
+        containerRef,
+        () => {
+            setOpen(false);
+            setView("days");
+        },
+        open
+    );
+
+    //disable helper functions
     const isDisabled = (iso: string) => iso > today || !!(minDate && iso < minDate) || !!(maxDate && iso > maxDate);
     const isPrevDisabled =
-        (month.getFullYear() <= 1970 && month.getMonth() <= 0) || (minDate && toISO(month) < minDate);
+        (month.getFullYear() <= 1970 && month.getMonth() <= 0) || !!(minDate && toISO(month) < minDate);
     const isNextDisabled = toISO(new Date(month.getFullYear(), month.getMonth() + 1, 1)) > today;
-    const isFutureMonth = (m: number, y: number) => {
+    const isFutureMonth = (month: number, year: number) => {
         const now = new Date();
-        return new Date(y, m, 1) > new Date(now.getFullYear(), now.getMonth(), 1);
+        return new Date(year, month, 1) > new Date(now.getFullYear(), now.getMonth(), 1);
     };
 
     const handleDateSelect = (day: number) => {
@@ -44,43 +84,63 @@ export default function DatePicker({value, onChange, minDate, maxDate}: Props) {
     };
 
     const years = Array.from({length: new Date().getFullYear() - 1970 + 1}, (_, i) => 1970 + i).reverse();
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    const viewSelectedStyles = (selected: boolean) =>
+        `p-1 rounded-lg transition duration-300 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed
+            ${
+                selected
+                    ? "bg-(--text-accent) text-(--text-dim) font-bold shadow-[0_0_8px_var(--text-accent)]"
+                    : "bg-(--bg-hover) text-(--text-accent) hover:bg-(--border-glow)"
+            }`;
 
     return (
         <div className="relative" ref={containerRef}>
             <button
                 onClick={() => setOpen(!open)}
-                className="flex items-center gap-3 rounded-lg border border-cyan-400/30 bg-black/40 px-3 py-1 text-cyan-200 text-xs hover:border-cyan-400/60 hover:shadow-[0_0_10px_rgba(34,211,238,0.2)] hover:cursor-pointer"
+                className="group flex w-39 items-center justify-between gap-3 rounded-xl p-3 border transition duration-300 cursor-pointer active:shadow-[0_0_8px_var(--text-accent)] border-(--border) bg-(--bg-card) hover:border-(--border-glow) text md:hover:scale-120 md:active:scale-120"
             >
-                {value}
-                <Calendar size={12} />
+                {/*formatted date*/}
+                <span className="font-mono text-(--text-accent)">{formatDate(value)}</span>
+                <Calendar
+                    size={15}
+                    className="group-hover:scale-120 group-hover:text-(--text-accent) group-active:scale-120"
+                />
             </button>
 
+            {/*dropdown calendar*/}
             {open && (
-                <div className="absolute left-1/2 -translate-x-1/2 z-10 mt-3 w-50 rounded-xl border border-cyan-400/30 bg-[#0b0f1a] p-3 shadow-[0_0_20px_rgba(0,0,0,0.8)] text-cyan-200">
-                    <div className="flex items-center justify-between mb-3 border-b border-cyan-400/10 pb-1">
+                <div
+                    className={`absolute ${isRight ? "right-0" : "left-1/2 -translate-x-1/2"} z-20 mt-3 w-72 rounded-xl p-3 cyber-dropdown bg-(--bg-base)`}
+                >
+                    {/*header row*/}
+                    <div className="flex items-center justify-between mb-3 pb-1 border-b border-(--border)">
                         <button
                             disabled={isPrevDisabled || view === "years"}
                             onClick={() =>
-                                view === "days"
-                                    ? setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))
-                                    : setMonth(new Date(month.getFullYear() - 1, 0, 1))
+                                setMonth(
+                                    new Date(
+                                        view === "days" ? month.getFullYear() : month.getFullYear() - 1,
+                                        view === "days" ? month.getMonth() - 1 : 0,
+                                        1
+                                    )
+                                )
                             }
-                            className="hover:text-cyan-400 hover:cursor-pointer transition disabled:opacity-10 disabled:cursor-not-allowed"
+                            className="text-(--text-accent) cursor-pointer transition duration-300 hover:scale-120 active:scale-120 active:shadow-[0_0_8px_var(--text-accent)] disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                             <ChevronLeft size={18} />
                         </button>
 
-                        <div className="flex gap-3 text-xs font-mono font-semibold truncate">
+                        {/*view switcher and today buttons*/}
+                        <div className="flex items-center gap-3 font-mono font-semibold">
                             <button
-                                className="hover:text-cyan-400 hover:cursor-pointer transition"
                                 onClick={() => setView("months")}
+                                className="cursor-pointer text-(--text-accent) hover:scale-120 active:scale-120 active:shadow-[0_0_8px_var(--text-accent)] transition duration-300"
                             >
-                                {monthNames[month.getMonth()]}
+                                {MONTH_NAMES[month.getMonth()]}
                             </button>
                             <button
-                                className="hover:text-cyan-400 hover:cursor-pointer transition"
                                 onClick={() => setView("years")}
+                                className="cursor-pointer text-(--text-accent) hover:scale-120 active:scale-120 active:shadow-[0_0_8px_var(--text-accent)] transition duration-300"
                             >
                                 {month.getFullYear()}
                             </button>
@@ -91,92 +151,102 @@ export default function DatePicker({value, onChange, minDate, maxDate}: Props) {
                                     setOpen(false);
                                 }}
                                 title="Today"
-                                className="hover:text-cyan-400 hover:cursor-pointer transition"
+                                className="cursor-pointer text-(--text-accent) hover:scale-120 active:scale-120 active:shadow-[0_0_8px_var(--text-accent)] transition duration-300"
                             >
                                 <AlarmClock size={18} />
                             </button>
                         </div>
 
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-3">
                             <button
                                 disabled={isNextDisabled || view === "years"}
                                 onClick={() =>
-                                    view === "days"
-                                        ? setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))
-                                        : setMonth(new Date(month.getFullYear() + 1, 0, 1))
+                                    setMonth(
+                                        new Date(
+                                            view === "days" ? month.getFullYear() : month.getFullYear() + 1,
+                                            view === "days" ? month.getMonth() + 1 : 0,
+                                            1
+                                        )
+                                    )
                                 }
-                                className="hover:text-cyan-400 hover:cursor-pointer transition disabled:opacity-10 disabled:cursor-not-allowed"
+                                className="text-(--text-accent) hover:scale-120 active:scale-120 cursor-pointer active:shadow-[0_0_8px_var(--text-accent)] transition duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
                             >
                                 <ChevronRight size={18} />
                             </button>
                             <button
                                 onClick={() => setOpen(false)}
-                                className="text-red-600 hover:text-red-400 hover:cursor-pointer transition"
+                                className="text-(--text-dim) hover:text-(--text-accent) hover:scale-120 active:scale-120 cursor-pointer active:shadow-[0_0_8px_var(--text-accent)] transition duration-300"
                             >
                                 <XCircle size={18} />
                             </button>
                         </div>
                     </div>
 
+                    {/*day grid*/}
                     {view === "days" && (
-                        <div className="grid grid-cols-7 gap-1 text-center text-xs">
-                            {["S", "M", "T", "W", "T", "F", "S"].map(dayOfWeekName => (
-                                <div key={dayOfWeekName} className="text-cyan-400 font-sans font-semibold">
-                                    {dayOfWeekName}
+                        <div className="grid grid-cols-7 gap-2 text-center">
+                            {DAY_LABELS.map((dayOfWeek: string, index: number) => (
+                                <div key={index} className="font-bold text-(--text-accent)">
+                                    {dayOfWeek.slice(0, 2)}
                                 </div>
                             ))}
+                            {/*empty cells before the first day*/}
                             {Array(month.getDay())
-                                .fill(0)
-                                .map((_, i) => (
-                                    <div key={i} />
+                                .fill(null)
+                                .map((_, index: number) => (
+                                    <div key={`${index}`} />
                                 ))}
+                            {/*day buttons*/}
                             {Array(new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate())
-                                .fill(0)
-                                .map((_, i) => (
-                                    <button
-                                        key={i}
-                                        disabled={isDisabled(
-                                            toISO(new Date(month.getFullYear(), month.getMonth(), i + 2))
-                                        )}
-                                        onClick={() => handleDateSelect(i + 2)}
-                                        className={`rounded-xl p-1 bg-cyan-400/10 text-cyan-600 font-mono font-light ${toISO(new Date(month.getFullYear(), month.getMonth(), i + 2)) === value ? "bg-cyan-400/30" : "hover:bg-cyan-400/30"} hover:cursor-pointer disabled:opacity-10 disabled:cursor-not-allowed transition`}
-                                    >
-                                        {i + 1}
-                                    </button>
-                                ))}
+                                .fill(null)
+                                .map((_, index: number) => {
+                                    const dayIso = toISO(new Date(month.getFullYear(), month.getMonth(), index + 1));
+                                    return (
+                                        <button
+                                            key={index}
+                                            disabled={isDisabled(dayIso)}
+                                            onClick={() => handleDateSelect(index + 1)}
+                                            className={`${viewSelectedStyles(dayIso === value)} hover:scale-120 active:scale-120`}
+                                        >
+                                            {index + 1}
+                                        </button>
+                                    );
+                                })}
                         </div>
                     )}
 
+                    {/*month grid*/}
                     {view === "months" && (
                         <div className="grid grid-cols-3 gap-1">
-                            {monthNames.map((m, i) => (
+                            {MONTH_NAMES.map((monthName: string, index: number) => (
                                 <button
-                                    key={m}
-                                    disabled={isFutureMonth(i, month.getFullYear())}
+                                    key={index}
+                                    disabled={isFutureMonth(index, month.getFullYear())}
                                     onClick={() => {
-                                        setMonth(new Date(month.getFullYear(), i, 1));
+                                        setMonth(new Date(month.getFullYear(), index, 1));
                                         setView("days");
                                     }}
-                                    className={`p-1 text-xs rounded-xl bg-cyan-400/10 text-cyan-600 ${monthNames[month.getMonth()] === m ? "bg-cyan-400/30" : "hover:bg-cyan-400/30"} hover:cursor-pointer disabled:opacity-10 disabled:cursor-not-allowed`}
+                                    className={`${viewSelectedStyles(month.getMonth() === index)} hover:scale-120 active:scale-120`}
                                 >
-                                    {m}
+                                    {monthName}
                                 </button>
                             ))}
                         </div>
                     )}
 
+                    {/*year grid*/}
                     {view === "years" && (
-                        <div className="grid grid-cols-3 gap-1 max-h-39 overflow-y-scroll custom-scrollbar animate-in fade-in zoom-in duration-200 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-cyan-400/10 [&::-webkit-scrollbar-trumb]:bg-cyan-400 [&::-webkit-scrollbar-trumb]:shadow-[0_0_10px_rgba(34,211,238,0.2)] hover:[&::-webkit-scrollbar-thumb]:bg-cyan-400/30">
-                            {years.map(y => (
+                        <div className="grid grid-cols-3 gap-1 max-h-36 overflow-y-auto">
+                            {years.map((year: number) => (
                                 <button
-                                    key={y}
+                                    key={year}
                                     onClick={() => {
-                                        setMonth(new Date(y, month.getMonth(), 1));
+                                        setMonth(new Date(year, month.getMonth(), 1));
                                         setView("days");
                                     }}
-                                    className={`mb-1 p-1 text-xs rounded-xl font-mono font-light bg-cyan-400/10 text-cyan-600 ${month.getFullYear() === y ? "bg-cyan-400/30" : "hover:bg-cyan-400/30"} hover:cursor-pointer`}
+                                    className={`${viewSelectedStyles(month.getFullYear() === year)} hover:scale-120 active:scale-120`}
                                 >
-                                    {y}
+                                    {year}
                                 </button>
                             ))}
                         </div>
