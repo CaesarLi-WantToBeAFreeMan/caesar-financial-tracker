@@ -1,4 +1,6 @@
 spring:
+    profiles:
+        active: local
     jackson:
         property-naming-strategy: SNAKE_CASE
     datasource:
@@ -25,3 +27,4 @@ app:
 
 jwt:
     secret: ${JWT_SECRET}
+    expiration: ${JWT_EXPIRATION:86400000} #24 hours

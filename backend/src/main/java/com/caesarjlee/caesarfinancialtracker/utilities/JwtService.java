@@ -12,10 +12,10 @@ import javax.crypto.SecretKey;
 
 @Service
 public class JwtService {
-    @Value("${jwt.secret}") private String SECRET;
-    private static final long              EXPIRATION = 1_000 * 60 * 60 * 24 * 3;   // 3 days
+    @Value("${jwt.secret}") private String            SECRET;
+    @Value("${jwt.expiration:86400000}") private long EXPIRATION;
 
-    private SecretKey                      getSigningKey() {
+    private SecretKey                                 getSigningKey() {
         return Keys.hmacShaKeyFor(SECRET.getBytes());
     }
 
