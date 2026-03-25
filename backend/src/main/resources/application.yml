@@ -1,6 +1,6 @@
 spring:
-    profiles:
-        active: local
+    # profiles:
+    #     active: local
     jackson:
         property-naming-strategy: SNAKE_CASE
     datasource:
