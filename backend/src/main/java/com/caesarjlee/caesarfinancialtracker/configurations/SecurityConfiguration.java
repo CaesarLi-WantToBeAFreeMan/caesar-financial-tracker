@@ -28,8 +28,10 @@ public class SecurityConfiguration {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
-        httpSecurity.csrf(csrf -> csrf.disable())
-            .cors(Customizer.withDefaults())
+        httpSecurity
+            .csrf(csrf -> csrf.disable())
+            // .cors(Customizer.withDefaults())
+            .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             // .authorizeHttpRequests(
             //     authentication
@@ -42,8 +44,15 @@ public class SecurityConfiguration {
             //            .authenticated())
             // .authenticationProvider(authenticationProvider())
             // .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);   // JWT filter
-            .authorizeHttpRequests(authentication -> authentication.anyRequest().permitAll());
-        return httpSecurity.build();
+            .authorizeHttpRequests(
+                authentication ->
+                    authentication
+                                .requestMatchers(HttpMethod.OPTIONS, "/**")
+                                    .permitAll()
+                                .anyRequest()
+                                    .permitAll()
+            );
+        retur httpSecurity.build();
     }
 
     @Bean
