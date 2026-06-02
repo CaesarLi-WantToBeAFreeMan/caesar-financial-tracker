@@ -17,8 +17,8 @@ public class GlobalCorsConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        List<String> origins =
-            Arrays.stream(allowedOriginsRaw.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList();
+        // List<String> origins =
+        //     Arrays.stream(allowedOriginsRaw.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList();
 
         CorsConfiguration corsConfiguration = new CorsConfiguration();
         // corsConfiguration.setAllowedOrigins(origins);
