@@ -30,29 +30,18 @@ public class SecurityConfiguration {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, CorsConfigurationSource corsConfigurationSource) throws Exception {
         httpSecurity
-            .csrf(csrf -> csrf.disable())
-            // .cors(Customizer.withDefaults())
             .cors(cors -> cors.configurationSource(corsConfigurationSource))
+            .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            // .authorizeHttpRequests(
-            //     authentication
-            //     -> authentication
-            //            .requestMatchers(HttpMethod.OPTIONS, "/**")   // allow CORS preflight for all endpoints
-            //            .permitAll()
-            //            .requestMatchers("/profiles/register", "/profiles/login")
-            //            .permitAll()
-            //            .anyRequest()   // everything else requires JWT
-            //            .authenticated())
-            // .authenticationProvider(authenticationProvider())
-            // .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);   // JWT filter
             .authorizeHttpRequests(
                 authentication ->
                     authentication
-                        .requestMatchers(HttpMethod.OPTIONS, "/**")
-                            .permitAll()
-                        .anyRequest()
-                            .permitAll()
-            );
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/profiles/register", "/profiles/login").permitAll()
+                        .anyRequest().authenticated()
+            )
+            .authenticationProvider(authenticationProvider())
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return httpSecurity.build();
     }
 
