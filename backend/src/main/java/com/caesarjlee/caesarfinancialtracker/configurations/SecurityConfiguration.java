@@ -31,17 +31,18 @@ public class SecurityConfiguration {
         httpSecurity.csrf(csrf -> csrf.disable())
             .cors(Customizer.withDefaults())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(
-                authentication
-                -> authentication
-                       .requestMatchers(HttpMethod.OPTIONS, "/**")   // allow CORS preflight for all endpoints
-                       .permitAll()
-                       .requestMatchers("/profiles/register", "/profiles/login")
-                       .permitAll()
-                       .anyRequest()   // everything else requires JWT
-                       .authenticated())
-            .authenticationProvider(authenticationProvider())
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);   // JWT filter
+            // .authorizeHttpRequests(
+            //     authentication
+            //     -> authentication
+            //            .requestMatchers(HttpMethod.OPTIONS, "/**")   // allow CORS preflight for all endpoints
+            //            .permitAll()
+            //            .requestMatchers("/profiles/register", "/profiles/login")
+            //            .permitAll()
+            //            .anyRequest()   // everything else requires JWT
+            //            .authenticated())
+            // .authenticationProvider(authenticationProvider())
+            // .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);   // JWT filter
+            .authorizeHttpRequests(authentication -> authentication.anyRequest().permitAll());
         return httpSecurity.build();
     }
 
