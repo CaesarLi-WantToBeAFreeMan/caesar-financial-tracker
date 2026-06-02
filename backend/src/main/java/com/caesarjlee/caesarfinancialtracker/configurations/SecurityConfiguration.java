@@ -28,7 +28,7 @@ public class SecurityConfiguration {
     private final AppUserDetailsService   appUserDetailsService;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, CorsConfigurationSource corsConfigurationSource) throws Exception {
         httpSecurity
             .csrf(csrf -> csrf.disable())
             // .cors(Customizer.withDefaults())
