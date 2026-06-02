@@ -47,12 +47,12 @@ public class SecurityConfiguration {
             .authorizeHttpRequests(
                 authentication ->
                     authentication
-                                .requestMatchers(HttpMethod.OPTIONS, "/**")
-                                    .permitAll()
-                                .anyRequest()
-                                    .permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**")
+                            .permitAll()
+                        .anyRequest()
+                            .permitAll()
             );
-        retur httpSecurity.build();
+        return httpSecurity.build();
     }
 
     @Bean
